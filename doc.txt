@@ -1,0 +1,7 @@
+wiki in spritesheet
+https://github.com/jiixing/spritesheet/wiki
+
+concenpt of paperscript
+
+in papergrapher
+the tools are added as paperscript to the <canvas> with same id
