@@ -5,3 +5,6 @@
 /dist/paperjs.zip
 
 \.idea/
+hack/node_modules/
+hack/js/*.js
+hack/js/*.js.map

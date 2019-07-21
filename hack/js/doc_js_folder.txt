@@ -1,0 +1,2 @@
+this is the output of babel watch on es6
+  don't use this to store original js code

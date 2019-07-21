@@ -1,0 +1,1 @@
+babel --watch es6 --out-dir js --source-maps

@@ -1,0 +1,12 @@
+load a paperscript from file
+
+button to reload
+
+use jquery?
+
+pass a rect and draw inside it see animatedstar
+
+this tool script export different property with default
+
+the color star
+
