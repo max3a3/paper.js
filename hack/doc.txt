@@ -1,5 +1,0 @@
-can't really combine brunch.require with whatever abomination the paper js is doing
-
-can try mapping include to require and making sure the file layout is correct
-
-this might work if it is part under one source

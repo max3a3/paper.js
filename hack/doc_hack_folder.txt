@@ -1,0 +1,17 @@
+can't really combine brunch.require with whatever abomination the paper js is doing
+
+replacing include with require need to import the global and export the class that is being defined
+  in each source file.
+
+  as currently all include(file) call is in the same scope
+---
+
+the <script for the html file
+
+acorn  to allow es6 in paperscript
+../src/load.js  allow debugging each paper.js source file separately
+
+babel-polyfill  allow writing async await in the app file
+
+
+run_es6_babel  to convert file from es6 to js folder

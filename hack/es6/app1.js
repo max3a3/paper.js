@@ -1,3 +1,9 @@
+/*
+test calling execute to pass in scoope specific script
+
+btn_load will load from es6/app1_embed.js
+btn_exec will exec the script
+*/
 function btn_exec_handler() {
     console.log("btn_1")
     // console.log($("#textinput").val())
