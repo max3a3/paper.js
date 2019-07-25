@@ -8,6 +8,7 @@ class Turtle {
         this.fillColor = "blue"
         this.lineWidth = 2
         this.path = null
+        this.group = null
     }
 
     forward(length) {
@@ -20,22 +21,22 @@ class Turtle {
         this.y += length * Math.cos(this.angleInRadians);
 
         if (this.penDown) {
-            let create_path = false
-            if (this.path) {
-                // this.path.lineTo(this.x, this.y)
-        }else {
-                this.path = new paper.Path([x0, y0])
-                create_path = true
 
-            }
-            if (create_path) {
+            if (!this.path) {
+                this.path = new paper.Path([x0, y0])
                 let style = {
                     fillColor: this.fillColor,
                     strokeColor: this.penColor,
                     strokeWidth: 2
                 };
                 this.path.style = style
+
+                if (!this.group)
+                    this.group = new paper.Group()
+
+                this.group.addChild(this.path)
             }
+
             this.path.lineTo(this.x, this.y)
 
         }
@@ -51,6 +52,25 @@ class Turtle {
         return this;
     }
 
+    right(angleInDegrees) {
+        return this.left(-angleInDegrees)
+    }
+
+    backward(length) {
+        return this.forward(-length)
+    }
+
+    pd() {
+        this.penDown = true
+        return this
+    }
+
+    pu() {
+        this.penDown = false
+        this.path = null
+        //todo create other path
+        return this
+    }
 
 }
 

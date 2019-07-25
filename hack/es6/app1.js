@@ -21,6 +21,45 @@ async function btn_load_handler() {
     $("#textinput").val(response.data)
 
 }
+function turtleArrow() {
+    turtle.pd()
+    turtle.forward(50);
+    turtle.left(150);
+    turtle.forward(7);
+    turtle.backward(7);
+    turtle.right(150);
+    turtle.right(150);
+    turtle.forward(7);
+    turtle.backward(7);
+    turtle.left(150);
+};
+
+function btn_logo_handler(n) {
+    switch (n) {
+        case 1:
+            turtle.x = 350;
+            turtle.y = 30;
+            turtle.pd().forward(50)
+            turtle.left(90).forward(80)
+
+            turtle.pu().forward(80).right(20)
+            turtle.pd().forward(20).right(90).forward(80)
+            break
+        case 2:
+            turtle.x = 350;
+            turtle.y = 30;
+            turtleArrow()
+            break
+        case 'group':
+            let bound = turtle.group.bounds
+            console.log("bound",bound)
+            break
+        case 'size':
+            break
+
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
 
     var canvas = document.getElementById('canvas');
@@ -46,5 +85,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     $("#btn_exec").click(()=>btn_exec_handler());
     $("#btn_load").click(()=>btn_load_handler());
+    $("#btn_logo_1").click(()=>btn_logo_handler(1));
+    $("#btn_logo_2 ").click(()=>btn_logo_handler(2));
+
+    $("#logo_group").click(()=>btn_logo_handler('group'));
+    $("#logo_size").click(()=>btn_logo_handler('size'));
+
 })
 
