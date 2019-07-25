@@ -1,13 +1,12 @@
-/*paperscript*/
-let path
-function onMouseDrag(event) {
+/*paperscript will create tool global */
+tool.onMouseDrag = (event) =>{
     // The radius is the distance between the position
     // where the user clicked and the current position
     // of the mouse.
     path = new Path.Circle({
         center: event.downPoint,
         radius: (event.downPoint - event.point).length,
-        fillColor: 'white',
+        fillColor: 'red',
         strokeColor: 'black'
     });
 
@@ -16,19 +15,3 @@ function onMouseDrag(event) {
     // Remove this path on the next drag event:
     path.removeOnDrag();
 };
-class MyClass { // test of using acorn
-    get message() {
-        return 'Haxxxllo Welt!'
-    }
-
-    saySomething() {
-        console.log(this.message)
-    }
-}
-
-function onMouseUp() {
-    if(path)
-        path.fullySelected=false
-    path=null
-    new MyClass().saySomething()
-}
