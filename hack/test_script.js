@@ -20,6 +20,8 @@ document.addEventListener('DOMContentLoaded', () => {
     turtle.forward(50)
     turtle.left(90).forward(80)
     path = turtle.path
+    
+    demo()  // test consoloe
 });
 
 function path1(){
