@@ -23,15 +23,17 @@ async function btn_load_handler() {
 }
 function turtleArrow() {
     turtle.pd()
+    let size = 20
     turtle.forward(50);
     turtle.left(150);
-    turtle.forward(7);
-    turtle.backward(7);
+    turtle.forward(size);
+    turtle.backward(size);
     turtle.right(150);
     turtle.right(150);
-    turtle.forward(7);
-    turtle.backward(7);
+    turtle.forward(size);
+    turtle.backward(size);
     turtle.left(150);
+    turtle.pu()
 };
 
 function btn_logo_handler(n) {
@@ -42,22 +44,46 @@ function btn_logo_handler(n) {
             turtle.pd().forward(50)
             turtle.left(90).forward(80)
 
+
             turtle.pu().forward(80).right(20)
             turtle.pd().forward(20).right(90).forward(80)
+            turtle.pu()
             break
         case 2:
-            turtle.x = 350;
-            turtle.y = 30;
+            turtle.x = 0;
+            turtle.y = 0;
             turtleArrow()
+            turtle.group.position =[350,80]
+
             break
         case 'group':
             let bound = turtle.group.bounds
             console.log("bound",bound)
             break
-        case 'size':
+        case 'scale':
+            turtle.group.setScaling([1,-1])
             break
 
     }
+}
+function listObject() {
+    //list content
+    console.log("listing active layer")
+
+    let layer = paper.project.getActiveLayer()
+    layer.getChildren().forEach(i => {
+        console.log(i._class, i._name)
+        if (i._class === 'Group' && i.name!=='grid') {
+            i.getChildren().forEach(j => console.log("  ", j._class, j.name))
+        } else {
+            if (i.fillColor) console.log("fillColor", i.fillColor.toString())
+
+        }
+    })
+}
+function reset() {
+    paper.project.clear()
+    turtle.reset()
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -82,6 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
     path.lineTo(start.add([200, 250]));
 
     path.style = style  // necessary?
+    $("#clear").click(()=>reset());
 
     $("#btn_exec").click(()=>btn_exec_handler());
     $("#btn_load").click(()=>btn_load_handler());
@@ -89,7 +116,8 @@ document.addEventListener('DOMContentLoaded', () => {
     $("#btn_logo_2 ").click(()=>btn_logo_handler(2));
 
     $("#logo_group").click(()=>btn_logo_handler('group'));
-    $("#logo_size").click(()=>btn_logo_handler('size'));
+    $("#logo_scale").click(()=>btn_logo_handler('scale'));
+    $("#btn_print").click(()=>listObject());
 
 })
 

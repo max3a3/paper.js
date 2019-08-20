@@ -12,18 +12,35 @@
     <script type="text/javascript" src="./js/app_object_logo.js"></script>
     <script type="text/javascript" src="./js/app1.js?v=1"></script>
 </head>
-<body >
+<body>
 <div class="flex_container">
-<div class="flex_item">
-    test logo simple logo turtle
-    <button id="btn_load">load</button> <button id="btn_exec">exec</button><br/>
-    <button id="btn_logo_1">logo_1</button><button id="btn_logo_2">logo_2</button><br/>
-    <button id="logo_group">group</button><button id="logo_size">logo_size</button><br/>
-    <textarea class="textarea_long" id="textinput">blah blah</textarea>
-</div>
-<div class="flex_item">
-    <canvas id="canvas" resize></canvas>
-</div>
+    <div class="flex_item">
+        <div>
+            test loading script and executing it: <br/>
+            click load then click exec, this install the circle tool on the paper canvas<br/>
+            also show using es6 javascript in the tool file definition that is loaded on the fly
+        </div>
+        <div>
+            test logo simple logo turtle<br/>
+            logo1 and logo2 is simple logo like call defined in app1.js<br/>
+            test using paper api to place a generated picture and finding the bound [group button]
+        </div>
+        <button id="clear">clear</button>
+        <button id="btn_load">load</button>
+        <button id="btn_exec">exec</button>
+        <br/>
+        <button id="btn_logo_1">logo_1</button>
+        <button id="btn_logo_2">logo_2</button>
+        <br/>
+        <button id="logo_group">group</button>
+        <button id="logo_scale">logo_scale</button>
+        <button id="btn_print">print</button>
+        <br/>
+        <textarea class="textarea_long" id="textinput">blah blah</textarea>
+    </div>
+    <div class="flex_item">
+        <canvas id="canvas" resize></canvas>
+    </div>
 </div>
 </body>
 </html>

@@ -1,5 +1,8 @@
 class Turtle {
     constructor() {
+        this.reset()
+    }
+    reset() {
         this.x = 0
         this.y = 0
         this.angleInRadians = 0
@@ -10,7 +13,6 @@ class Turtle {
         this.path = null
         this.group = null
     }
-
     forward(length) {
         // console.log('forward(' + length + ')');
         // this.logPenStatus();
@@ -31,8 +33,10 @@ class Turtle {
                 };
                 this.path.style = style
 
-                if (!this.group)
+                if (!this.group) {
                     this.group = new paper.Group()
+                    paper.project.activeLayer.addChild(this.group)
+                }
 
                 this.group.addChild(this.path)
             }

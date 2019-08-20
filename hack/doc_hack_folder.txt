@@ -1,3 +1,24 @@
+app_object_demo (not yet)
+  having object deifinition in logo
+
+app1.
+  test logo and group, using app in es6
+    test loading script and executing it
+
+
+circles
+  test paper script
+
+simple_logo (not yet
+
+
+test_script
+  test caling paper in direct js
+
+
+----
+
+
 can't really combine brunch.require with whatever abomination the paper js is doing
 
 replacing include with require need to import the global and export the class that is being defined
