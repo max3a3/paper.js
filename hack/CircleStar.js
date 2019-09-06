@@ -1,35 +1,38 @@
 // see circles.html
 
-const TEST = 1
+const TEST = 0
+const STAR_POINTS = 30
+const STAR_LAYER = 8
+
 function createStar() {
     const group = new paper.Group();
-    const i = 9;
-    let num_points = 20
-    const path = new paper.Path({
-        fillColor: 'red',
-        strokeColor: 'black',
-        closed: true
-    });
-    const offset = new paper.Point(20 + 10 * i, 0);
-    const l = offset.length;
-    for (let j = 0; j < num_points * 2; j++) {
-        offset.angle += 360 / num_points;
-        const vector = offset.normalize(l * (j % 2 ? 0.1 : -0.1));
-        path.add(offset.add(vector));
+    const start_i = 1;
+    for (let i = start_i; i < start_i+STAR_LAYER; i++) {
+        const path = new paper.Path({
+            fillColor: i % 2 ? 'red' : 'white',
+            strokeColor: 'black',
+            closed: true
+        });
+        const offset = new paper.Point(20 + 10 * i, 0);
+        const l = offset.length;
+        for (let j = 0; j < STAR_POINTS * 2; j++) {
+            offset.angle += 360 / STAR_POINTS;
+            const vector = offset.normalize(l * (j % 2 ? 0.1 : -0.1));
+            path.add(offset.add(vector));
+        }
+        path.smooth({
+            type: 'continuous'
+        });
+        group.insertChild(0,path)
     }
-    path.smooth({
-        type: 'continuous'
-    });
-    group.addChild(path)
     group.position = [300, 150]
     return group
 }
 
-mouseDown = false
+let mouseDown = false
+let object = null
 if (TEST)
     object = createStar()
-else
-    object = null
 
 function onMouseDown(event) {
     mouseDown = true
@@ -66,7 +69,7 @@ function onMouseDrag(event) {
             if (height > 0) {
                 bounds.height = height;
             }
-            object.bounds = bounds // will create a rectlink to object bounds
+            object.bounds = bounds
         }
     }
 
