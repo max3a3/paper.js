@@ -1,3 +1,11 @@
+/*
+not yet custom object test of using paperscript
+of
+
+paper star
+
+
+*/
 class CustomObject {
     create(paper, from_pt, to_pt) {
 
@@ -14,7 +22,7 @@ class CustomObject {
 
         let values = {
             count: 34,
-            points: 32
+            points: 10
         };
         let i = 0; // star offset
 
@@ -23,7 +31,7 @@ class CustomObject {
             closed: true
         });
 
-        let offset = new Point(20 + 10 * i, 0);
+        let offset = from;
         let l = offset.length;
         for (let j = 0; j < values.points * 2; j++) {
             offset.angle += 360 / values.points;

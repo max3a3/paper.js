@@ -1,4 +1,6 @@
 /*paperscript*/
+/* see circles.html */
+
 let path
 function onMouseDrag(event) {
     // The radius is the distance between the position

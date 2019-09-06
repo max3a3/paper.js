@@ -5,3 +5,12 @@ concenpt of paperscript
 
 in papergrapher
 the tools are added as paperscript to the <canvas> with same id
+---
+
+group internal,
+
+ group.bounds  from item.bounds
+    attachChild to add path to it, first path can be clipping path
+    can pass matrix to get the bound
+
+
