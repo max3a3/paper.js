@@ -12,9 +12,10 @@ function btn_exec_handler() {
     let paper = window.paper
 
     let ret = paper.execute($("#textinput").val())
-    console.log("result",ret)
+    console.log("result", ret)
 
 }
+
 async function btn_load_handler() {
     const script_text = "a\nb\nc\n\nd"
     $("#textinput").val(script_text)
@@ -23,6 +24,7 @@ async function btn_load_handler() {
     $("#textinput").val(response.data)
 
 }
+
 document.addEventListener('DOMContentLoaded', () => {
 
     var canvas = document.getElementById('canvas');
@@ -47,10 +49,12 @@ document.addEventListener('DOMContentLoaded', () => {
     path.style = style  // necessary?
 
 
-    let tool = RectangleTool(paper,star_object)
-    tool.activate()
+    let recttool = ObjectCreationTool(paper, star_object)
+    let circletool = CircleTool(paper, star_object)
 
-    $("#set_a").click(()=>btn_set('a'));
-    $("#set_b").click(()=>btn_set('b'));
+    circletool.activate()
+
+    $("#set_a").click(() => recttool.activate());
+    $("#set_b").click(() => circletool.activate());
 })
 
