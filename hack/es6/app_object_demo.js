@@ -49,12 +49,17 @@ document.addEventListener('DOMContentLoaded', () => {
     path.style = style  // necessary?
 
 
-    let recttool = ObjectCreationTool(paper, star_object)
-    let circletool = CircleTool(paper, star_object)
+    let star_tool = ObjectCreationTool(paper, star_object)
+    let circletool = CircleTool(paper)
+    let select_tool = SelectTool(paper, star_object)
+    let transform_tool = TransformTool(paper)
 
+    console.log("select_tool")
     circletool.activate()
 
-    $("#set_a").click(() => recttool.activate());
-    $("#set_b").click(() => circletool.activate());
+    $("#t_star").click(() => {console.log("star_tool");star_tool.activate()});
+    $("#t_circle").click(() => {console.log("circletool");circletool.activate()});
+    $("#t_select").click(() => {console.log("select_tool");select_tool.activate()});
+    $("#t_transform").click(() => {console.log("transform_tool");transform_tool.activate()});
 })
 

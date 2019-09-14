@@ -41,7 +41,7 @@ function ObjectCreationTool(paper, custom_object) {
     }
     return tool
 }
-function CircleTool(paper, custom_object) {
+function CircleTool(paper) {
     const tool = new paper.Tool();
     let mouseDown;
     let path; // last path
