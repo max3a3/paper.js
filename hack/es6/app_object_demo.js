@@ -24,13 +24,7 @@ async function btn_load_handler() {
     $("#textinput").val(response.data)
 
 }
-
-document.addEventListener('DOMContentLoaded', () => {
-
-    var canvas = document.getElementById('canvas');
-    // Create an empty project and a view for the canvas:
-    paper.setup(canvas);
-
+function init_drawing(paper) {
     let style = {
         fillColor: new paper.Color(1, 1, 0),
         strokeColor: 'black',
@@ -48,12 +42,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     path.style = style  // necessary?
 
+}
+function app_init(paper) {
 
     let star_tool = ObjectCreationTool(paper, star_object)
     let circletool = CircleTool(paper)
     let select_tool = SelectTool(paper, star_object)
     let transform_tool = TransformTool(paper)
 
+    select_tool.props = {
+        onNewSelection:(items)=>transform_tool.activate()
+    }
     console.log("select_tool")
     circletool.activate()
 
@@ -61,5 +60,22 @@ document.addEventListener('DOMContentLoaded', () => {
     $("#t_circle").click(() => {console.log("circletool");circletool.activate()});
     $("#t_select").click(() => {console.log("select_tool");select_tool.activate()});
     $("#t_transform").click(() => {console.log("transform_tool");transform_tool.activate()});
+
+    $("#b_dump").click(()=>{
+        let value = paper.project.exportJSON({asString: false})
+        $("#textinput").val(JSON.stringify(value, undefined, 2))
+    })
+    pg_layer.setup()
+}
+document.addEventListener('DOMContentLoaded', () => {
+
+    var canvas = document.getElementById('canvas');
+    // Create an empty project and a view for the canvas:
+    paper.setup(canvas);
+
+    app_init(paper)
+
+    init_drawing(paper)
+
 })
 

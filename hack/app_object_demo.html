@@ -10,6 +10,7 @@
     <script type="text/javascript" src="./node_modules/acorn/dist/acorn.js"></script>
     <script type="text/javascript" src="../src/load.js"></script>
     <script type="text/javascript" src="./js/app_object_demo.js?v=1"></script>
+    <script type="text/javascript" src="./js/app_object_demo_layer.js?v=1"></script>
     <script type="text/javascript" src="./js/app_object_tool.js?v=1"></script>
     <script type="text/javascript" src="./js/app_object_transform_tool.js?v=1"></script>
     <script type="text/javascript" src="./js/app_object_custom.js?v=1"></script>
@@ -17,15 +18,19 @@
 <body>
 <div class="flex_container">
     <div class="flex_item">
-<pre>
-    have simple tool
-    </pre>
+        <pre>
+        have simple tool
+        </pre>
         <button id="t_star">star tool</button>
         <button id="t_circle">circle tool</button>
         <br/>
         <button id="t_select">select</button>
         <button id="t_transform">transform</button>
         <br/>
+        <button id="b_dump">dump</button>
+        <br/>
+
+        <textarea class="textarea_long" id="textinput">output</textarea>
     </div>
     <div class="flex_item">
         <canvas id="canvas" resize></canvas>

@@ -37,5 +37,6 @@ canvas[resize] {
 }
 
 .textarea_long {
-    height: 20em;
+    height: 30em;
+    width:100%;
 }
