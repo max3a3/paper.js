@@ -1,5 +1,5 @@
 // this is simple javascript function include
-const pg_layer = function () {
+pg.layer = function () {
     var setup = function () {
         var defaultLayer = addNewLayer('Default layer');
         defaultLayer.data.isDefaultLayer = true;

@@ -31,14 +31,14 @@ function init_drawing(paper) {
         strokeWidth: 2
     };
 
-    let start_pt = [70, 5]
+    let start_pt = [70, 35]
     let start = new paper.Point(start_pt);
     // Move to start and draw a line from there
     let path = new paper.Path();
     path.moveTo(start);
     // Note that the plus operator on Point objects does not work
     // in JavaScript. Instead, we need to call the add() function:
-    path.lineTo(start.add([200, 250]));
+    path.lineTo(start.add([100, 150]));
 
     path.style = style  // necessary?
 
@@ -54,7 +54,7 @@ function app_init(paper) {
         onNewSelection:(items)=>transform_tool.activate()
     }
     console.log("select_tool")
-    circletool.activate()
+    select_tool.activate()
 
     $("#t_star").click(() => {console.log("star_tool");star_tool.activate()});
     $("#t_circle").click(() => {console.log("circletool");circletool.activate()});
@@ -65,7 +65,7 @@ function app_init(paper) {
         let value = paper.project.exportJSON({asString: false})
         $("#textinput").val(JSON.stringify(value, undefined, 2))
     })
-    pg_layer.setup()
+    pg.layer.setup()
 }
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -79,3 +79,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
 })
 
+let pg = {}  // global to hold other stuff
