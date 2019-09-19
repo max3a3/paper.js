@@ -1,11 +1,12 @@
 const STAR_POINTS = 30
 const STAR_LAYER = 8
+STAR_COLOR = 'red'
 function createObject() {
     const group = new paper.Group();
     const start_i = 1;
     for (let i = start_i; i < start_i+STAR_LAYER; i++) {
         const path = new paper.Path({
-            fillColor: i % 2 ? 'red' : 'white',
+            fillColor: i % 2 ? STAR_COLOR : 'white',
             strokeColor: 'black',
             closed: true
         });

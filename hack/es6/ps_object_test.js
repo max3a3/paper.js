@@ -10,16 +10,25 @@ function btn_exec_handler() {
     console.log("btn_1")
     // console.log($("#textinput").val())
     let paper = window.paper
-    paper.customApp = true
+    // paper.customApp = true
     let script = $("#textinput").val()
 
-    let ret = paper.execute(script,{customApp:true})
+    let ret = paper.execute(script,{customApp:true,props:{STAR_POINTS:10,STAR_LAYER:4,STAR_COLOR:'yellow'}})
     console.log("result", ret)
+    // let obj = ret.createObject() // execute function declared in the script
 }
 
-async function btn_load_handler() {
+function btn_object_handler(pos, props) {
+    let script = $("#textinput").val()
+    let ret = paper.execute(script,{customApp:true,props})
+    console.log("result", ret)
+    let obj = ret.createObject() // execute function declared in the script
+    obj.position = pos
+}
 
-    let response = await axios.get('es6/ps_object_1.js')
+async function btn_load_handler(filename='ps_object_1.js') {
+
+    let response = await axios.get(`es6/${filename}`)
     $("#textinput").val(response.data)
 
 }
@@ -48,13 +57,15 @@ function app_init(paper) {
     $("#btn_load").click(()=>btn_load_handler());
 
     $("#clear").click(()=>    paper.project.clear());
+    $("#obj_1").click(()=>btn_object_handler([80,40],{STAR_LAYER:2}));
+    $("#obj_2").click(()=>btn_object_handler([140,120],{STAR_COLOR:'yellow',STAR_POINTS:10}));
 
 
     $("#btn_print").click(()=>{
         let value = paper.project.exportJSON({asString: false})
         $("#textinput").val(JSON.stringify(value, undefined, 2))
     })
-    btn_load_handler()
+    btn_load_handler()//('ps_ast_test.js')//()
 }
 document.addEventListener('DOMContentLoaded', () => {
 
