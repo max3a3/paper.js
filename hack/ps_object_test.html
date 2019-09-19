@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>App1</title>
+    <link rel="stylesheet" href="./style.css">
+    <script type="text/javascript" src="./node_modules/jquery/dist/jquery.js"></script>
+    <script type="text/javascript" src="./node_modules/babel-polyfill/dist/polyfill.js"></script>
+    <script type="text/javascript" src="./node_modules/axios/dist/axios.js"></script>
+    <script type="text/javascript" src="./node_modules/acorn/dist/acorn.js"></script>
+    <script type="text/javascript" src="../src/load.js"></script>
+    <script type="text/javascript" src="./js/ps_object_test.js"></script>
+</head>
+<body>
+<div class="flex_container">
+    <div class="flex_item">
+        <div>
+            test loading ps script and executing it to create an group with paperscript object: <br/>
+            click load then click exec,
+        </div>
+        <button id="clear">clear</button>
+        <button id="btn_load">load</button>
+        <button id="btn_exec">exec</button>
+        <button id="btn_print">print</button>
+        <br/>
+        <textarea class="textarea_long" id="textinput">blah blah</textarea>
+    </div>
+    <div class="flex_item">
+        <canvas id="canvas" resize></canvas>
+    </div>
+</div>
+</body>
+</html>
