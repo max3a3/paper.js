@@ -1,3 +1,7 @@
+run gulp buiild
+
+then checkin the new file in dist folder, then refer to npm gith shouold work
+--
 wiki in spritesheet
 https://github.com/jiixing/spritesheet/wiki
 
