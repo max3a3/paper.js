@@ -496,6 +496,11 @@ Base.exports.PaperScript = function() {
         expose(scope);
         // Add a fake `module.exports` object so PaperScripts can export things.
         code = 'var module = { exports: {} }; ' + code;
+
+        if (options && options.customApp) {
+            handlers = [] // strip this
+            expose ({document:{}, window:{}}) // hide browser globals
+        }
         // Finally define the handler variable names as parameters and compose
         // the string describing the properties for the returned exports object
         // at the end of the code execution, so we can retrieve their values
