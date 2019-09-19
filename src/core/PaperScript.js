@@ -188,6 +188,7 @@ Base.exports.PaperScript = function() {
             code = code.substring(0, start) + str + code.substring(end);
         }
 
+        var UPPER_CASE_NAME = new RegExp(/^[A-Z]+(?:_[A-Z]+)*$/)
         // Recursively walks the AST and replaces the code of certain nodes
         function walkAST(node, parent) {
             if (!node)
@@ -209,6 +210,29 @@ Base.exports.PaperScript = function() {
                 }
             }
             switch (node.type) {
+                case 'Identifier':  // splice literal declaration
+                    var name = node.name
+                    if (UPPER_CASE_NAME.test(name)) {
+                        if (parent)
+                            if (parent.type === 'AssignmentExpression' && parent.right.type === 'Literal') {
+                                // console.log(">> LiteralVariableDeclarator", name, parent.right.value)
+                                if (options.props && options.props[name]) {
+                                    var new_value = options.props[name]
+
+                                    replaceCode(parent, node.name + '="' + new_value + '"')
+                                    // console.log('   replaced', new_value)
+                                }
+                            } else if (parent.type === 'VariableDeclarator') {
+                                // console.log(">> VariableDeclarator", name, parent.init.value)
+                                if (options.props && options.props[name]) {
+                                    var new_value = options.props[name]
+                                    replaceCode(parent, node.name + '=' + new_value )
+                                    // console.log('   replaced', new_value)
+                                }
+                            }
+                    }
+                    break
+
             case 'UnaryExpression': // -a
                 if (node.operator in unaryOperators
                         && node.argument.type !== 'Literal') {
@@ -477,6 +501,7 @@ Base.exports.PaperScript = function() {
             func,
             compiled = typeof code === 'object' ? code : compile(code, options);
         code = compiled.code;
+        // if (options.customApp) console.log(code)
         function expose(scope, hidden) {
             // Look through all enumerable properties on the scope and expose
             // these too as pseudo-globals, but only if they seem to be in use.
@@ -490,6 +515,9 @@ Base.exports.PaperScript = function() {
                     args.push(scope[key]);
                 }
             }
+        }
+        if (options && options.customApp) {
+            scope.customApp=true // add paper.customApp flag
         }
         expose({ __$__: __$__, $__: $__, paper: scope, tool: tool },
                 true);
