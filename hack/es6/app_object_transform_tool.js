@@ -96,8 +96,9 @@ function TransformTool(paper) {
     var origCenter;
     var scaleItems;
 
+    // for rotation
     var rotItems = [];
-    var rotGroupPivot;
+    var rotGroupPivot; // set to center of selection in mousedown
     var prevRot = [];
 
     var itemGroup; // to record dragging and pass to mouseUp
@@ -247,7 +248,28 @@ function TransformTool(paper) {
         // pass to pg guides to move item
         // pg.hover.handleHoveredItem(hitOptions, event);
     };
+    function dragRotate(event) {
+        var rotAngle = (event.point.subtract(rotGroupPivot)).angle;
 
+        jQuery.each(rotItems, function(i, item) {
+
+            if(!item.data.origRot) {
+                item.data.origRot = item.rotation;
+            }
+
+            if(event.modifiers.shift) {
+                rotAngle = Math.round(rotAngle / 45) *45;  // in 45 degree
+                item.applyMatrix = false;
+                item.pivot = rotGroupPivot;
+                item.rotation = rotAngle;
+
+            } else {
+                console.log('drag rotation ',rotAngle - prevRot[i])
+                item.rotate(rotAngle - prevRot[i], rotGroupPivot);  // incremental rotation
+            }
+            prevRot[i] = rotAngle;  // save for each item? todo: it is not the same for all selection
+        });
+    }
     function dragScale(event) {
         var modOrigSize = origSize;
 
@@ -303,6 +325,9 @@ function TransformTool(paper) {
         if (mode === 'scale') {
             dragScale(event)
         }
+        else if (mode==='rotate') {
+            dragRotate(event)
+        }
     };
 
     tool.onMouseUp = (event) => {
@@ -322,6 +347,13 @@ function TransformTool(paper) {
             // pg.undo.snapshot('scaleSelection');
 
             setSelectionBounds();
+        }
+        else if (mode==='rotate') {
+            jQuery.each(rotItems, function(i, item) {
+                debugger
+                item.applyMatrix = true;
+            });
+
         }
     }
 
