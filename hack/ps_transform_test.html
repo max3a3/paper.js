@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>App1</title>
+    <link rel="stylesheet" href="./style.css">
+    <script type="text/javascript" src="./node_modules/jquery/dist/jquery.js"></script>
+    <script type="text/javascript" src="./node_modules/babel-polyfill/dist/polyfill.js"></script>
+    <script type="text/javascript" src="./node_modules/axios/dist/axios.js"></script>
+    <script type="text/javascript" src="./node_modules/acorn/dist/acorn.js"></script>
+    <script type="text/javascript" src="../src/load.js"></script>
+    <script type="text/javascript" src="./js/ps_transform_test.js"></script>
+</head>
+<body>
+<div class="flex_container">
+    <div class="flex_item">
+        <div>
+            test transform applymatrix should leave grouped path not affected but just affect the group transform
+               if the group apply matrix is false
+        </div>
+        <button id="b_dump">dump</button>
+
+        <textarea class="textarea_long" id="textinput">blah blah</textarea>
+    </div>
+    <div class="flex_item">
+        <canvas id="canvas" resize></canvas>
+    </div>
+</div>
+</body>
+</html>
