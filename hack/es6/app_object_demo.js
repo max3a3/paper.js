@@ -42,6 +42,17 @@ function init_drawing(paper) {
 
     path.style = style  // necessary?
 
+// second path
+    path = new paper.Path();
+    start = start.add([90,30])
+    path.moveTo(start);
+    // Note that the plus operator on Point objects does not work
+    // in JavaScript. Instead, we need to call the add() function:
+    path.lineTo(start.add([100, 150]));
+    path.style = style
+    path.strokeColor = 'red'
+
+
 }
 function app_init(paper) {
 

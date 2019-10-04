@@ -350,9 +350,9 @@ function TransformTool(paper) {
         }
         else if (mode==='rotate') {
             jQuery.each(rotItems, function(i, item) {
-                debugger
-                item.applyMatrix = true;
+                item.applyMatrix = true;  // in case it was turned off by shift rotate
             });
+            setSelectionBounds();
 
         }
     }
