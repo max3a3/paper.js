@@ -1,0 +1,5 @@
+patch paperscript parsing
+https://github.com/max3a3/paper.js/commit/ae8d569d539e1bbc96a76884e73d78aa168132b7
+
+change in item.js _transformContent
+85d9de36235a62efc834ee41ec6f506152acfcaa

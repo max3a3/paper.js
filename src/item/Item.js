@@ -3618,9 +3618,11 @@ new function() { // Injection scope for hit-test functions shared with project
     _transformContent: function(matrix, applyRecursively, setApplyMatrix) {
         var children = this._children;
         if (children) {
-            for (var i = 0, l = children.length; i < l; i++)
-                children[i].transform(matrix, true, applyRecursively,
-                        setApplyMatrix);
+            for (var i = 0, l = children.length; i < l; i++) {
+                let childrenApplyMatrix = children[i].applyMatrix // wng change, respect children applyMatrix
+                children[i].transform(matrix, childrenApplyMatrix, applyRecursively,
+                    setApplyMatrix);
+            }
             return true;
         }
     },

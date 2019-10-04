@@ -9,7 +9,7 @@
  *
  * All rights reserved.
  *
- * Date: Thu Sep 19 11:34:53 2019 -0700
+ * Date: Thu Oct 3 17:25:59 2019 -0700
  *
  ***
  *
@@ -4379,9 +4379,11 @@ new function() {
 	_transformContent: function(matrix, applyRecursively, setApplyMatrix) {
 		var children = this._children;
 		if (children) {
-			for (var i = 0, l = children.length; i < l; i++)
-				children[i].transform(matrix, true, applyRecursively,
-						setApplyMatrix);
+			for (var i = 0, l = children.length; i < l; i++) {
+				let childrenApplyMatrix = children[i].applyMatrix
+				children[i].transform(matrix, childrenApplyMatrix, applyRecursively,
+					setApplyMatrix);
+			}
 			return true;
 		}
 	},
