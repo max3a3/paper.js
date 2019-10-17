@@ -26,9 +26,14 @@ test_script
 
 test_internal
    how internal object property is get and set
+   test custom_brush object, to determine when _draw is called,
 
 spirograph
   sample of paperscript animation and kinematic linking
+
+ps_transform_test
+  test if changing transform on a group pass it down to the child (it does as applyMatrix), so there is hack in _transformContent to
+     prevent changing group children transform if not needed
 
 ----
 
