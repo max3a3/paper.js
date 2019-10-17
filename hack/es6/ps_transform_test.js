@@ -1,29 +1,4 @@
-/*
- test settting color to a object that is created by csutom tool
-
-first define a rect then create a custom object
-
-
- */
-
-function btn_exec_handler() {
-    console.log("btn_1")
-    // console.log($("#textinput").val())
-    let paper = window.paper
-
-    let ret = paper.execute($("#textinput").val())
-    console.log("result", ret)
-
-}
-
-async function btn_load_handler() {
-    const script_text = "a\nb\nc\n\nd"
-    $("#textinput").val(script_text)
-
-    let response = await axios.get('es6/app1_embed.js')
-    $("#textinput").val(response.data)
-
-}
+let object_group
 function init_drawing(paper) {
     let style = {
         fillColor: new paper.Color(1, 1, 0),
@@ -31,7 +6,7 @@ function init_drawing(paper) {
         strokeWidth: 2
     };
 
-    let start_pt = [70, 35]
+    let start_pt = [50, 50]
     let start = new paper.Point(start_pt);
     // Move to start and draw a line from there
     let path = new paper.Path();
@@ -42,16 +17,33 @@ function init_drawing(paper) {
 
     path.style = style  // necessary?
 
+    object_group = new paper.Group()
+    object_group.applyMatrix = false
+    object_group.addChild(path)
+    console.log("object_group.position",object_group.position)
 
-
+  //  object_group.position = [0,0] // move x,y
 }
 function app_init(paper) {
 
-    $("#t_star").click(() => {console.log("star_tool");star_tool.activate()});
-    $("#t_circle").click(() => {console.log("circletool");circletool.activate()});
-    $("#t_select").click(() => {console.log("select_tool");select_tool.activate()});
-    $("#t_transform").click(() => {console.log("transform_tool");transform_tool.activate()});
+    $("#transform1").click(() => {
+        console.log("star_tool");
+        let itemGroup = new paper.Group(object_group)
 
+        //todo necessary?
+        itemGroup.applyMatrix = false;
+
+        let pivot = itemGroup.position
+        itemGroup.scale(0.4,0.4,pivot)
+        itemGroup.applyMatrix = true;
+        itemGroup.layer.addChildren(itemGroup.children);
+        itemGroup.remove();
+
+
+    });
+    $("#movegroup").click(() => {
+        let position = object_group.position
+        object_group.position = position.add(50,20)})
     $("#b_dump").click(()=>{
         let value = paper.project.exportJSON({asString: false})
         $("#textinput").val(JSON.stringify(value, undefined, 2))

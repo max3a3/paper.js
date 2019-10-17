@@ -1,4 +1,6 @@
-run gulp buiild
+to check in
+run
+gulp build
 
 then checkin the new file in dist folder, then refer to npm gith shouold work
 --
@@ -17,4 +19,54 @@ group internal,
     attachChild to add path to it, first path can be clipping path
     can pass matrix to get the bound
 
+
+
+---
+setting style will go to _style[set](value directly to the children, style.js line 146
+
+
+    Base.each(groupDefaults, function(value, key) {
+        var isColor = /Color$/.test(key),
+            isPoint = key === 'shadowOffset',
+            part = Base.capitalize(key),
+            flag = flags[key],
+            set = 'set' + part,
+            get = 'get' + part;
+
+        // Define getters and setters to be injected into this class.
+        // This is how style values are handled:
+        // - Style values are all stored in this._values
+        // - The style object starts with an empty _values object, with fallback
+        //   on _defaults through code in the getter below.
+        // - Only the styles that are explicitly set on the object get defined
+        //   in _values.
+        // - Color values are not stored as converted colors immediately. The
+        //   raw value is stored, and conversion only happens in the getter.
+        fields[set] = function(value) {
+            var owner = this._owner,
+                children = owner && owner._children,
+                applyToChildren = children && children.length > 0
+                    && !(owner instanceof CompoundPath);
+            // Only unify styles on children of Groups, excluding CompoundPaths.
+            if (applyToChildren) {
+                for (var i = 0, l = children.length; i < l; i++)
+                    children[i]._style[set](value);
+            }
+            // Always store selectedColor in item _values to make sure that
+
+
+this._style.fillColor
+
+this acutally call the getFillColor as defined in fields[get] and for group it gets it from the children
+  so when you remove children all the style is gone
+
+  when you set it is passed directly via
+  fields[set]  in style.js
+---
+
+to run, old webstorm seem picky
+
+so just run via http-server in root folder
+http://127.0.0.1:8080/hack/app_object_demo.html
+http://127.0.0.1:8080/hack/ps_object_test.html
 
