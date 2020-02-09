@@ -1,3 +1,72 @@
+// test caching path point with simplify parameter prop
+let PathCustomPaper = paper.Path.extend(
+    {
+        _class: "SimplifyPath",
+        initialize: function PathCustom(arg) {
+            debugger // what happened with arg? not important as we don't use it to pass points normally?
+            // call  super
+            PathCustom.base.call(this, arg); //StarClass is the function name
+            this._smoothVersion = 0
+            this._smoothFactor = 0
+            this._originalSegments = null
+            this._drawSegments = null
+
+        },
+        // _draw: function (ctx, param, parentStrokeMatrix) {
+        //     debugger
+        // },
+        draw: function PathCustomDraw (ctx, param, parentStrokeMatrix) {
+            debugger
+            if (!this._originalSegments) {
+                this._originalSegments = _.clone(this._segments)  // need to create new array with same data pointer
+            }
+            if (this._smoothFactor && this.version!==this._smoothVersion) {
+                this._smoothVersion = this.version // take note when it is simplified so any change to segments will resimplify
+
+                this.simplify(this._smoothFactor) // take out the segments with smoothed one
+                this._drawSegments = _.clone(this._segments) // cached it
+            }
+
+            if (!this._drawSegments)
+                this._drawSegments = _.clone(this._segments)
+
+            this._segments = this._drawSegments // change array pointer
+            PathCustomDraw.base.call(this, ctx, param, parentStrokeMatrix); //StarClass is the function name
+            this._segments = this._originalSegments  // change array pointer
+        },
+        setSmoothFactor: function (opt) {   //<---   prop change
+            // pass down option object
+            this._smoothFactor = opt; // cache for getOptions call
+            this._smoothVersion = 0
+            this._changed(/*#=*/ Change.SEGMENTS);
+            // this._changed(/*#=*/ Change.GEOMETRY);
+        },
+        getSmoothFactor: function () {   //<---   prop getter
+            return this._smoothFactor
+        },
+
+
+    })
+
+/*
+            drawSimplify: function (tolerance) {
+
+            if this._cc
+            let ret =this.simplify(tolerance) // mucked with our segment
+            return ret;
+
+        },
+        add() {
+
+        }
+
+        // when the path is drawn we want to simplify it first
+    }
+
+)*/
+
+
+// just test the call sequence code in es6-brush project
 let BrushCustomPaper = paper.Item.extend(
     /** @lends Shape# */ {
         _class: "BrushCustom",
@@ -48,7 +117,7 @@ let BrushCustomPaper = paper.Item.extend(
     }
 );
 
-
+let myCustomPath // global
 function btn_handler(n) {
     console.log("btn_handler", n)
     paper.project.clear()
@@ -147,6 +216,20 @@ function btn_handler(n) {
             starObject.position = [40, 80];
 */
             break
+
+        case 'path_cache':
+            console.log('path_cache')
+            let points = [[10, 10], [20, 15], [35, 40], [50, 50], [60, 40], [55, 30], [70, 10], [75, 30], [85, 50]]
+            myCustomPath = new PathCustomPaper({project:paper.project}) //new paper.Path();
+            myCustomPath.strokeColor = 'black';
+            points.forEach(p =>
+                myCustomPath.add(p))
+
+            myCustomPath.smoothFactor = 2 //(simplify)
+
+            break
+        case 'change_path_smooth' :
+            myCustomPath.smoothFactor = myCustomPath.smoothFactor + 4
     }
 }
 
@@ -159,10 +242,14 @@ document.addEventListener('DOMContentLoaded', () => {
         $("#add_line_path_color").click(() => btn_handler('line_color'));
         $("#bound_rect").click(() => btn_handler('bound_rect'));
         $("#circle_shape").click(() => btn_handler('circle_shape'));
-        $("#brush").click(() => btn_handler('brush'));
+    $("#brush").click(() => btn_handler('brush'));  // just test the skeleton
+    $("#path_cache").click(() => btn_handler('path_cache'));  // just test the skeleton
+    $("#change_path_smooth").click(() => {
+        myCustomPath.smoothFactor = myCustomPath.smoothFactor + 6  //calling btn_handler will clear project
+    console.log("myCustomPath.smoothFactor",myCustomPath.smoothFactor)
 
+    });  // just test the skeleton
         // not yet
-        $("#set_b").click(() => btn_handler('b'));
 
     }
 )
