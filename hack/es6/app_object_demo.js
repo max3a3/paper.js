@@ -54,12 +54,22 @@ function init_drawing(paper) {
 
 
 }
+function btn_handler(n) {
+    paper.project.clear()
+    switch (n) {
+        case 'test_bone': {
+            console.log("test_bone")
+        }
+            break
+    }
+}
 function app_init(paper) {
 
     let star_tool = ObjectCreationTool(paper, star_object)
     let circletool = CircleTool(paper)
     let select_tool = SelectTool(paper, star_object)
     let transform_tool = TransformTool(paper)
+    let bone_tool = BoneTool(paper)
 
     select_tool.props = {
         onNewSelection:(items)=>transform_tool.activate()
@@ -71,6 +81,8 @@ function app_init(paper) {
     $("#t_circle").click(() => {console.log("circletool");circletool.activate()});
     $("#t_select").click(() => {console.log("select_tool");select_tool.activate()});
     $("#t_transform").click(() => {console.log("transform_tool");transform_tool.activate()});
+    $("#bone_tool").click(() => {console.log("bone_tool");bone_tool.activate()});
+    $("#clear").click(() => btn_handler('clear'));
 
     $("#b_dump").click(()=>{
         let value = paper.project.exportJSON({asString: false})

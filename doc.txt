@@ -70,3 +70,10 @@ so just run via http-server in root folder
 http://127.0.0.1:8080/hack/app_object_demo.html
 http://127.0.0.1:8080/hack/ps_object_test.html
 
+
+go to hack/
+run run_es6_babel.bat
+
+log
+ march 8, port custom object to app_object_tool implement bone drawing
+
