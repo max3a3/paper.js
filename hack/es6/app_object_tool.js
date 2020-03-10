@@ -106,11 +106,11 @@ function BoneTool(paper) {
 
 
         let props = {
-            fillColor: "white",
             strokeColor: "black",
             options : {
                 end: [event.downPoint.x, event.downPoint.y],
                 orient:event.delta.angle,
+                draw_orient:true
             }
 
         }
@@ -118,12 +118,12 @@ function BoneTool(paper) {
 
 
         props = {
-            fillColor: "white",
             strokeColor: "black",
             options : {
                 start: [event.downPoint.x, event.downPoint.y],
                 end: [event.point.x,event.point.y],
                 orient:0,
+                draw_orient:false
             }
 
         }
