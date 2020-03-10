@@ -104,16 +104,30 @@ function BoneTool(paper) {
         path.remove()
         let pt = event.downPoint
 
+
         let props = {
             fillColor: "white",
             strokeColor: "black",
             options : {
-                start: [event.downPoint.x, event.downPoint.y],
-                end: [event.point.x,event.point.y]
+                end: [event.downPoint.x, event.downPoint.y],
+                orient:event.delta.angle,
             }
 
         }
-        new TriJointClass( paper, props);
+        new BoneClass( paper, props);
+
+
+        props = {
+            fillColor: "white",
+            strokeColor: "black",
+            options : {
+                start: [event.downPoint.x, event.downPoint.y],
+                end: [event.point.x,event.point.y],
+                orient:0,
+            }
+
+        }
+        new BoneClass( paper, props);
         //create custom object
     }
     return tool

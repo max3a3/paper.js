@@ -74,8 +74,10 @@ function app_init(paper) {
     select_tool.props = {
         onNewSelection:(items)=>transform_tool.activate()
     }
-    console.log("select_tool")
-    select_tool.activate()
+    // console.log("select_tool")
+    // select_tool.activate()
+
+    bone_tool.activate()
 
     $("#t_star").click(() => {console.log("star_tool");star_tool.activate()});
     $("#t_circle").click(() => {console.log("circletool");circletool.activate()});
