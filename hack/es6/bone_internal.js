@@ -1,15 +1,13 @@
+
 function deg2rad(d) {
     return d * Math.PI / 180
-}
-
-function rad2deg(d) {
-    return d * 180 / Math.PI
 }
 
 let BoneClass = paper.CompoundPath.extend({
     _class: 'CustomBoneClass', // must have
 
     initialize: function CustomBoneClass(paper, props = {}) {
+        this._paper = paper
 
         CustomBoneClass.base.call(this, props);
         let {options} = props
@@ -18,7 +16,7 @@ let BoneClass = paper.CompoundPath.extend({
 
     },
     setOptions: function (opt) {   //<---   prop change
-        // pass down option object
+                                   // pass down option object
         this._options = opt; // cache for getOptions call
 
         this._callCreate(opt); // recreate the custom
@@ -32,11 +30,11 @@ let BoneClass = paper.CompoundPath.extend({
         this.removeChildren()
 
         const BONE_RADIUS = 12
-        let end = new paper.Point(opt.end)
+        let end = new paper.Point(opt.bone)
         let path
 
         if (!opt.draw_orient) {
-            path = new paper.Path.Circle({center: end, radius: BONE_RADIUS})
+            path = new this._paper.Path.Circle({center: end, radius: BONE_RADIUS})
             this.addChild(path)
         }
 
@@ -48,20 +46,20 @@ let BoneClass = paper.CompoundPath.extend({
             let v1 = new paper.Point([x + BONE_RADIUS * Math.cos(deg2rad(120 + orient)), y + BONE_RADIUS * Math.sin(deg2rad(120 + orient))])
             let v2 = new paper.Point([x + BONE_RADIUS * Math.cos(deg2rad(240 + orient)), y + BONE_RADIUS * Math.sin(deg2rad(240 + orient))])
 
-            path = new paper.Path([v0, v1, v2]);
+            path = new this._paper.Path([v0, v1, v2]);
             path.closed = true;
             this.addChild(path)  // triangle inside the circle
 
-            path = new Path.Circle({center: v1, radius: 3})  // small dot at base
+            path = new this._paper.Path.Circle({center: v1, radius: 3})  // small dot at base
             this.addChild(path)
 
-            path = new Path.Circle({center: v2, radius: 3})// small dot at base
+            path = new this._paper.Path.Circle({center: v2, radius: 3})// small dot at base
             this.addChild(path)
         }
 
-        if (opt.start) {
+        if (opt.parent) {
 
-            let start = new paper.Point(opt.start)
+            let start = new paper.Point(opt.parent)
             var arrowVec = start.subtract(end);
             arrowVec.angle += 90
 
@@ -70,7 +68,7 @@ let BoneClass = paper.CompoundPath.extend({
             let start1 = start.add(base)
             let start2 = start.subtract(base)
 
-            let line = new paper.Path([start1, start2, end])
+            let line = new this._paper.Path([start1, start2, end])
             line.closed=true
             this.addChild(line)
         }
