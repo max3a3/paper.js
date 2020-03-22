@@ -59,10 +59,23 @@ function CircleTool(paper) {
     tool.onMouseUp = (event) => {
         if (path)
             path.remove()
+        let fillColor = 'blue'
+        let radius = (event.downPoint.subtract(event.point)).length
+        const TEST_GRADIENT = true
+        if (TEST_GRADIENT) {
+            fillColor = {
+                gradient: {
+                    stops: [['yellow', 0.05], ['red', 0.2], ['black', 1]],
+                    radial: true
+                },
+                origin: event.downPoint,
+                destination: event.downPoint.add(new Point(radius,radius))
+            }
+        }
         path = new Path.Circle({
             center: event.downPoint,
-            radius: (event.downPoint.subtract(event.point)).length,
-            fillColor: 'blue',
+            radius,
+            fillColor,
             strokeColor: 'black'
         });
     }

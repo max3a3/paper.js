@@ -77,3 +77,4 @@ run run_es6_babel.bat
 log
  march 8, port custom object to app_object_tool implement bone drawing
 
+  march 22 , gardient test in app_object_demo:circle tool
