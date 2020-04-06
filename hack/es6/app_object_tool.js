@@ -37,7 +37,7 @@ function ObjectCreationTool(paper, custom_object) {
     }
     return tool
 }
-function CircleTool(paper) {
+function CircleTool(paper,cb=null) {
     const tool = new paper.Tool();
     let path; // last path
     let rect;
@@ -78,6 +78,8 @@ function CircleTool(paper) {
             fillColor,
             strokeColor: 'black'
         });
+        if (cb)
+            cb(path)
     }
     tool.onActivate = () => {
         console.log('circle tool activate event')

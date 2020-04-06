@@ -60,6 +60,30 @@ function btn_handler(n) {
         case 'test_bone': {
             console.log("test_bone")
         }
+        case 'svgimport': {
+            fetch('./gradient_eye.svg').then(resp => {
+                    resp.text().then(data => {
+                        debugger
+                        console.log("data")
+                        paper.project.importSVG(data)
+                    })
+                },
+                err => console.log('**fetch err ' + err))
+
+        }
+        case 'change_gradient_fill': {
+            console.log("depend on global from circle tool")
+            if (!AppState.circle) {
+                console.log("**err, no circle, create one with tool")
+                return
+            }
+            debugger
+            let circle = AppState.circle
+            let fill = circle.fillColor
+            let gradient = fill.gradient
+            let stop1 = gradient.stops[0]
+
+        }
             break
     }
 }
@@ -85,6 +109,9 @@ function app_init(paper) {
     $("#t_transform").click(() => {console.log("transform_tool");transform_tool.activate()});
     $("#bone_tool").click(() => {console.log("bone_tool");bone_tool.activate()});
     $("#clear").click(() => btn_handler('clear'));
+    $("#svgimport").click(() => {
+        btn_handler('svgimport')
+    });
 
     $("#b_dump").click(()=>{
         let value = paper.project.exportJSON({asString: false})
