@@ -1,6 +1,6 @@
 
 
-function init_drawing(paper) {
+function init_drawing0(paper) {
     let style = {
         fillColor: new paper.Color(1, 1, 0),
         strokeColor: 'black',
@@ -28,6 +28,42 @@ function init_drawing(paper) {
     path.style = style
     path.strokeColor = 'red'
 
+
+}
+function init_drawing(paper) {
+
+    let from = new Point(30, 25)
+    let size = new Size(50, 50)
+    var rectangle = new paper.Rectangle(from, size)
+    var path = new paper.Path.Rectangle(from, size);
+    path.strokeColor = 'black';
+
+    var secondPath = path.clone();
+    var intersectionGroup = new Group();
+
+    // -> this test setting matrix for the source object
+    path.applyMatrix = false
+    path.position = new Point([90,30])
+    path.rotate(-20)
+    let srcMatrix = path.matrix
+
+    // this test the intersection and draw the result
+    secondPath.rotate(30);
+// debugger
+    var intersections = path.getIntersections(secondPath);
+    intersectionGroup.removeChildren();
+    console.log("intersections.length",intersections.length)
+
+
+    for (var i = 0; i < intersections.length; i++) {
+        let intersectionPoint =srcMatrix._transformPoint(intersections[i].point)
+        var intersectionPath = new paper.Path.Circle({
+            center: intersectionPoint,
+            radius: 4,
+            fillColor: 'red',
+            parent: intersectionGroup
+        });
+    }
 
 }
 
