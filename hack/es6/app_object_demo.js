@@ -5,7 +5,10 @@ first define a rect then create a custom object
 
 
  */
-
+function patchPaper(paper) {
+    paper.Path.prototype.setColorName = (n)=>this._colorName = n
+    paper.Path.prototype.getColorName = ()=>this._colorName
+}
 function btn_exec_handler() {
     console.log("btn_1")
     // console.log($("#textinput").val())
@@ -106,7 +109,55 @@ function btn_handler(n) {
 function circle_cb(path) {
     AppState.circle = path
 }
+function test_straps() {
+    debugger
+    var MyClass = Base.extend({
+        initialize: function MyClass() {
+            this._value = 10;
+            console.log('Creating MyClass instance');
+        },
 
+        getValue: function() {
+            console.log('Accessing value, returnig: ' + this._value);
+            return this._value;
+        },
+
+        setValue: function(value) {
+            console.log('Setting value to: ' + value);
+            this._value = value;
+        }
+    });
+
+    var hook = {
+        getName: function() {
+            console.log('Accessing name, returnig: ' + this._name);
+            return this._name;
+        },
+
+        setName: function(name) {
+            console.log('Setting name to: ' + name);
+            this._name = name;
+        }
+
+    }
+    debugger
+    var hookedClass = MyClass.extend(hook)
+
+    MyClass = hookedClass   // replace the class with the hooked class, we don't really need to do this now, as react paper will pass the property to the object
+                                //    it is just if the property is not using accessor setXxx we can't signal paper to do a redraw
+
+
+    var obj = new MyClass();
+    console.log('obj.value is: ' + obj.value);
+    obj.value = 20;
+    console.log('obj.value is: ' + obj.value);
+
+
+    console.log('obj.name is: ' + obj.name);
+    obj.name = "joe";
+    console.log('obj.name is: ' + obj.name);
+
+}
 function app_init(paper) {
 
     let star_tool = ObjectCreationTool(paper, star_object)
@@ -153,7 +204,10 @@ function app_init(paper) {
         let value = paper.project.exportJSON({asString: false})
         $("#textinput").val(JSON.stringify(value, undefined, 2))
     })
-    pg.layer.setup()
+
+    $("#straps").click(() =>         test_straps())
+
+        pg.layer.setup()
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -161,6 +215,8 @@ document.addEventListener('DOMContentLoaded', () => {
     var canvas = document.getElementById('canvas');
     // Create an empty project and a view for the canvas:
     paper.setup(canvas);
+
+    patchPaper(paper)
 
     app_init(paper)
 
