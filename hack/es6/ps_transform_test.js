@@ -14,11 +14,13 @@ function init_drawing(paper) {
     // Note that the plus operator on Point objects does not work
     // in JavaScript. Instead, we need to call the add() function:
     path.lineTo(start.add([100, 150]));
-
+    path.applyMatrix = false
+    let pathMatrix = new Matrix().translate([140,0])
+    path.transform(pathMatrix)
     path.style = style  // necessary?
 
     object_group = new paper.Group()
-    object_group.applyMatrix = false
+    object_group.applyMatrix = false // initial setup has matrix at group
     object_group.addChild(path)
     console.log("object_group.position",object_group.position)
 
@@ -27,17 +29,34 @@ function init_drawing(paper) {
 function app_init(paper) {
 
     $("#transform1").click(() => {
-        console.log("star_tool");
+        console.log("scaling group matrix");
         let itemGroup = new paper.Group(object_group)
 
-        //todo necessary?
-        itemGroup.applyMatrix = false;
 
         let pivot = itemGroup.position
         itemGroup.scale(0.4,0.4,pivot)
         itemGroup.applyMatrix = true;
         itemGroup.layer.addChildren(itemGroup.children);
         itemGroup.remove();
+
+
+    });
+    $("#transform2").click(() => {
+        console.log("scaling group should pass down to child matrix");
+
+        object_group.applyMatrix = true;// this test should pass down
+
+        let pivot = object_group.position
+        object_group.scale(0.4,0.4,pivot)
+
+
+    });
+    $("#transform3").click(() => {
+        console.log("moving group should pass down to child matrix");
+
+        object_group.applyMatrix = true;// this test should pass down
+
+        object_group.position = object_group.position.add([0,40])
 
 
     });
