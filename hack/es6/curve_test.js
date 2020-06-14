@@ -1,5 +1,3 @@
-
-
 function init_drawing0(paper) {
     let style = {
         fillColor: new paper.Color(1, 1, 0),
@@ -30,6 +28,33 @@ function init_drawing0(paper) {
 
 
 }
+
+function rectangleCurves(rect) {
+    var bl = rect.getBottomLeft(true),
+        tl = rect.getTopLeft(true),
+        tr = rect.getTopRight(true),
+        br = rect.getBottomRight(true),
+        segments;
+
+    segments = [
+        new Segment(bl),
+        new Segment(tl),
+        new Segment(tr),
+        new Segment(br),
+        null
+    ];
+    let curves = []
+    for (var i = 0; i < segments.length - 1; i++)
+        curves.push(new Curve(this, segments[i],
+            // Use first segment for segment2 of closing curve
+            segments[i + 1] || segments[0]))
+
+    return curves
+}
+
+function logCurves(curves) {
+    curves.forEach(c =>console.log(c.segment1.point.x,c.segment1.point.y,c.segment2.point.x,c.segment2.point.y))
+}
 function init_drawing(paper) {
 
     let from = new Point(30, 25)
@@ -43,20 +68,28 @@ function init_drawing(paper) {
 
     // -> this test setting matrix for the source object
     path.applyMatrix = false
-    path.position = new Point([90,30])
-    path.rotate(-20)
+    path.position = new Point([90, 30])
+    path.rotate(-23)
     let srcMatrix = path.matrix
 
-    // this test the intersection and draw the result
-    secondPath.rotate(30);
-// debugger
-    var intersections = path.getIntersections(secondPath);
+
+    var intersections
+
+    let rectCurves = rectangleCurves(rectangle)
+    logCurves(secondPath.getCurves())
+    logCurves(rectCurves)
+
+    // debugger
+    // choose using getIntersections or paper.Curve.getIntersections
+    intersections = path.getIntersections(secondPath);
+    // intersections = paper.Curve.getIntersections(path.getCurves(), rectCurves, null, path.matrix)
+
     intersectionGroup.removeChildren();
-    console.log("intersections.length",intersections.length)
+    console.log("intersections.length", intersections.length)
 
 
     for (var i = 0; i < intersections.length; i++) {
-        let intersectionPoint =srcMatrix._transformPoint(intersections[i].point)
+        let intersectionPoint = srcMatrix._transformPoint(intersections[i].point)
         var intersectionPath = new paper.Path.Circle({
             center: intersectionPoint,
             radius: 4,
@@ -78,11 +111,11 @@ function btn_handler(n) {
             break
         }
             break
-       case 'svgimport': {
+        case 'svgimport': {
             paper.project.clear()
-           // let svgfile = 'cap.svg'
-           let svgfile = 'cap_stitches_problem.svg'
-           // let svgfile = 'gradient_eye.svg'
+            // let svgfile = 'cap.svg'
+            let svgfile = 'cap_stitches_problem.svg'
+            // let svgfile = 'gradient_eye.svg'
             fetch(`./${svgfile}`).then(resp => {
                     resp.text().then(data => {
                         debugger
@@ -91,7 +124,7 @@ function btn_handler(n) {
                     })
                 },
                 err => console.log('**fetch err ' + err))
-           break
+            break
         }
     }
 }
