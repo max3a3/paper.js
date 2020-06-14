@@ -1446,7 +1446,9 @@ new function() { // Injection scope for event handling on the browser
                 event.preventDefault();
             }
         },
-
+        isDragging: function() {
+            return dragging;
+        },
         /**
          * Private method to handle key events.
          */
