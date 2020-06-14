@@ -1,5 +1,10 @@
 patch paperscript parsing
 https://github.com/max3a3/paper.js/commit/ae8d569d539e1bbc96a76884e73d78aa168132b7
+https://github.com/max3a3/paper.js/commit/95b1d10ef528e081fc28b4210f76ca3decb3fe14
 
 change in item.js _transformContent
-85d9de36235a62efc834ee41ec6f506152acfcaa
+https://github.com/max3a3/paper.js/commit/bda49d5f105caa0453d42509597e2fead75377f8
+bda49d5f105caa0453d42509597e2fead75377f8
+
+add new methods  View.isDragging and Tool.onFrame
+https://github.com/max3a3/paper.js/commit/d31565453d2dec3a38aba63445802b04f82b32ee

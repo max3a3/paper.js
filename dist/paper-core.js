@@ -9,7 +9,7 @@
  *
  * All rights reserved.
  *
- * Date: Thu Oct 3 17:25:59 2019 -0700
+ * Date: Sat Jun 13 22:59:00 2020 -0700
  *
  ***
  *
@@ -8079,8 +8079,7 @@ var PathItem = Item.extend({
 
 });
 
-var Path = PathItem.extend(
-{
+var Path = PathItem.extend({
 	_class: 'Path',
 	_serializeFields: {
 		segments: [],
@@ -8210,8 +8209,7 @@ var Path = PathItem.extend(
 			this._changed(41);
 		}
 	}
-},
-{
+}, {
 	beans: true,
 
 	getPathData: function(_matrix, _precision) {
@@ -9028,7 +9026,6 @@ var Path = PathItem.extend(
 			return loc && loc[name]();
 		};
 	},
-
 {
 	beans: false,
 
@@ -9092,7 +9089,6 @@ var Path = PathItem.extend(
 		return offsets;
 	}
 }),
-
 new function() {
 
 	function drawHandles(ctx, segments, matrix, size) {
@@ -13176,7 +13172,9 @@ new function() {
 				event.preventDefault();
 			}
 		},
-
+		isDragging: function() {
+			return dragging;
+		},
 		_handleKeyEvent: function(type, event, key, character) {
 			var scope = this._scope,
 				tool = scope.tool,
@@ -13632,7 +13630,7 @@ var Tool = PaperScopeItem.extend({
 	_reference: 'tool',
 	_events: ['onMouseDown', 'onMouseUp', 'onMouseDrag', 'onMouseMove',
 			'onActivate', 'onDeactivate', 'onEditOptions', 'onKeyDown',
-			'onKeyUp'],
+			'onKeyUp','onFrame'],
 
 	initialize: function Tool(props) {
 		PaperScopeItem.call(this);
