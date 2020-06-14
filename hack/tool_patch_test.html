@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>App1</title>
+    <link rel="stylesheet" href="./style.css">
+    <script type="text/javascript" src="./node_modules/jquery/dist/jquery.js"></script>
+    <script type="text/javascript" src="./node_modules/babel-polyfill/dist/polyfill.js"></script>
+    <script type="text/javascript" src="./node_modules/axios/dist/axios.js"></script>
+    <script type="text/javascript" src="./node_modules/acorn/dist/acorn.js"></script>
+    <script type="text/javascript" src="../src/load.js"></script>
+
+<!--    normal paperscript, need to load it from code so is customapp-->
+<!--    <script type="text/paperscript" canvas="canvas" src="./particle_script.js?a=1"></script>-->
+
+    <script type="text/javascript" src="./js/tool_patch_test.js"></script>
+</head>
+<body>
+<div class="flex_container">
+    <div class="flex_item">
+        <div>
+            test paperscript tool (partricle_script.js) <br/>
+            <small> want to add <strong>tool.onFrame</strong> called as long as mouse is down</small>
+        </div>
+        <button id="clear">clear</button>
+        <button id="btn_load">load</button>
+        <button id="btn_print">print</button>
+        <br/>
+
+        <textarea class="textarea_long" id="textinput">blah blah</textarea>
+    </div>
+    <div class="flex_item">
+        <canvas id="canvas" resize></canvas>
+    </div>
+</div>
+</body>
+</html>
