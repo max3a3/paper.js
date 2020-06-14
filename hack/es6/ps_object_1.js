@@ -26,14 +26,17 @@ function createObject() {
     return group
 }
 console.log('script run')
+console.log('document',document)
 
-// example of access to main app global
+// example of access to main app global  document global is nulled if customApp for safety reason
 if (document.getElementById) {  // document is empty object with customApp parameter when executing script
     k = document.getElementById('textinput')
     if (k)
         k.value = 30
 }
-if (!paper.customApp) createObject()
+
+if (!paper.customApp)
+    createObject()
 
 module.exports = {
     createObject,

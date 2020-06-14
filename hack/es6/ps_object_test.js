@@ -10,11 +10,13 @@ function btn_exec_handler() {
     console.log("btn_1")
     // console.log($("#textinput").val())
     let paper = window.paper
-    // paper.customApp = true
+    paper.customApp = false // this is in the scope, set to true when passing props in btn_object_handler
     let script = $("#textinput").val()
 
-    let ret = paper.execute(script,{customApp:true,props:{STAR_POINTS:10,STAR_LAYER:4,STAR_COLOR:'yellow'}})
-    console.log("result", ret)
+    let ret = paper.execute(script);  // the script has
+
+    // let ret = paper.execute(script,{customApp:true,props:{STAR_POINTS:10,STAR_LAYER:4,STAR_COLOR:'yellow'}})
+    console.log("btn_exec_handler result", ret)
     // let obj = ret.createObject() // execute function declared in the script
 }
 
@@ -22,6 +24,7 @@ function btn_object_handler(pos, props) {
     let script = $("#textinput").val()
     let ret = paper.execute(script,{customApp:true,props})
     console.log("result", ret)
+
     let obj = ret.createObject() // execute function declared in the script
     obj.position = pos
 }
