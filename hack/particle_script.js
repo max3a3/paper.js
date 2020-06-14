@@ -169,9 +169,12 @@ class ParticleDemo {
 particle_demo = new ParticleDemo()
 tool.onMouseDrag = (event) => {
   particle_demo.mousemove(event)
-    onFrame()
 
 };
+tool.onActivate = () =>{
+    console.log("particle tool activate called, need to recreate the list of particle here")
+
+}
 tool.onFrame = (event) =>{
   onFrame(event)
 }
@@ -180,3 +183,4 @@ function onFrame(event) {
   particle_demo.update()
   particle_demo.draw()
 }
+module.exports={customTool:tool}
