@@ -1,8 +1,10 @@
-to check in
-run
+>>to check in new dist
 gulp build
 
 then checkin the new file in dist folder, then refer to npm gith shouold work
+---
+some demo to create new paper item class\
+  search for 'extend' in hack/es6
 --
 wiki in spritesheet
 https://github.com/jiixing/spritesheet/wiki

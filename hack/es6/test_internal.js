@@ -178,11 +178,25 @@ function btn_handler(n) {
             break
         }
         case 'circle_shape':
-            var shape = new paper.Shape.Ellipse({
-                point: [20, 20],
-                size: [180, 60],
-                fillColor: "black"
-            });
+            // var shape = new paper.Shape.Ellipse({
+            //     point: [20, 20],
+            //     size: [180, 60],
+            //     fillColor: "black"
+            // });
+
+            var shape =new CircleCustomPaper(
+                {
+                    center: [40, 20],
+                    radius: 13,
+                    fillColor: "black",
+                    // fullySelected:"true"
+                });
+
+            var circle2 = shape.clone()
+
+            circle2.position =[160, 160]
+            circle2.radius = 50
+            circle2.fillColor = "red"
 
             break
         case 'bound_rect':
