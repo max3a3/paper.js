@@ -188,7 +188,7 @@ Base.exports.PaperScript = function() {
             code = code.substring(0, start) + str + code.substring(end);
         }
 
-        var UPPER_CASE_NAME = new RegExp(/^[A-Z]+(?:_[A-Z]+)*$/)
+        var UPPER_CASE_NAME = new RegExp(/^[A-Z]+(?:_[A-Z0-9]+)*$/)
         // Recursively walks the AST and replaces the code of certain nodes
         function walkAST(node, parent) {
             if (!node)
