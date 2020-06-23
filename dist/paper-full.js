@@ -9,7 +9,7 @@
  *
  * All rights reserved.
  *
- * Date: Sat Jun 13 22:59:00 2020 -0700
+ * Date: Sun Jun 21 13:18:24 2020 -0700
  *
  ***
  *
@@ -16769,7 +16769,7 @@ Base.exports.PaperScript = function() {
 			code = code.substring(0, start) + str + code.substring(end);
 		}
 
-		var UPPER_CASE_NAME = new RegExp(/^[A-Z]+(?:_[A-Z]+)*$/)
+		var UPPER_CASE_NAME = new RegExp(/^[A-Z]+(?:_[A-Z0-9]+)*$/)
 		function walkAST(node, parent) {
 			if (!node)
 				return;

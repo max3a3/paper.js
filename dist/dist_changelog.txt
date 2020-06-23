@@ -8,3 +8,6 @@ bda49d5f105caa0453d42509597e2fead75377f8
 
 add new methods  View.isDragging and Tool.onFrame
 https://github.com/max3a3/paper.js/commit/d31565453d2dec3a38aba63445802b04f82b32ee
+
+fix upper case detection
+939691330e6c7d292f6724fd31d4607c1bf49940
