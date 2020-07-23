@@ -116,7 +116,22 @@ let BrushCustomPaper = paper.Item.extend(
         }
     }
 );
+function drawCustomCircle() {
+    var shape =new CircleCustomPaper(
+        {
+            center: [40, 20],
+            radius: 13,
+            fillColor: "black",
+            // fullySelected:"true"
+        });
 
+    var circle2 = shape.clone()
+
+    circle2.position =[160, 160]
+    circle2.radius = 50
+    circle2.fillColor = "red"
+
+}
 let myCustomPath // global
 function btn_handler(n) {
     console.log("btn_handler", n)
@@ -178,26 +193,7 @@ function btn_handler(n) {
             break
         }
         case 'circle_shape':
-            // var shape = new paper.Shape.Ellipse({
-            //     point: [20, 20],
-            //     size: [180, 60],
-            //     fillColor: "black"
-            // });
-
-            var shape =new CircleCustomPaper(
-                {
-                    center: [40, 20],
-                    radius: 13,
-                    fillColor: "black",
-                    // fullySelected:"true"
-                });
-
-            var circle2 = shape.clone()
-
-            circle2.position =[160, 160]
-            circle2.radius = 50
-            circle2.fillColor = "red"
-
+           drawCustomCircle()
             break
         case 'bound_rect':
             // change bound see the path data, test in scratchpad
@@ -247,6 +243,66 @@ function btn_handler(n) {
     }
 }
 
+function serialize() {
+
+    /* create layer
+
+ some object
+    serialize the layer
+
+    but when rerendered it is a group not a layer
+    */
+    let layer =  new paper.Layer()
+    let props = {
+        "type": "L33INE",
+        "pathData": "M101.10098,78.4327l127,128",
+        "strokeColor": "rgba(223,90,90,1)",
+        "properties": {
+            "from": {
+                "x": 121.10098266601562,
+                "y": 78.43270111083984
+            },
+            "to": {
+                "x": 248.10098266601562,
+                "y": 206.43270111083984
+            }
+        }
+
+    }
+    let path = new paper.Path(props)
+
+    drawCustomCircle()
+
+
+    console.log("serialize")
+
+    let value
+    debugger
+
+/* test exporting group */ // same data as layer
+    // let group = new paper.Group()
+    // group.addChild(path)
+    // value = group.exportJSON({asString:false,precision: 16})
+
+
+/* test exporting layer */
+    value = Base.serialize(layer,{precision: 16})
+
+     // value = paper.exportJSON({asString: false})
+
+    let jsonString= JSON.stringify(value, undefined, 2)
+    console.log(jsonString)
+
+}
+function deserialize() {
+    let data
+    // data = GROUP_SIMPLE
+    data = GROUP_CUSTOM_CIRCLE
+
+    debugger
+    let group = new paper.Group()
+    group.importJSON(data)
+}
 document.addEventListener('DOMContentLoaded', () => {
 
         var canvas = document.getElementById('canvas');
@@ -256,12 +312,13 @@ document.addEventListener('DOMContentLoaded', () => {
         $("#add_line_path_color").click(() => btn_handler('line_color'));
         $("#bound_rect").click(() => btn_handler('bound_rect'));
         $("#circle_shape").click(() => btn_handler('circle_shape'));
-    $("#brush").click(() => btn_handler('brush'));  // just test the skeleton
-    $("#path_cache").click(() => btn_handler('path_cache'));  // just test the skeleton
+    $("#path_cache").click(() => btn_handler('path_cache'));
+    $("#brush").click(() => btn_handler('brush'));
+    $("#serialize").click(() => serialize());
+    $("#deserialize").click(() => deserialize());
     $("#change_path_smooth").click(() => {
         myCustomPath.smoothFactor = myCustomPath.smoothFactor + 6  //calling btn_handler will clear project
     console.log("myCustomPath.smoothFactor",myCustomPath.smoothFactor)
-
     });  // just test the skeleton
         // not yet
 
