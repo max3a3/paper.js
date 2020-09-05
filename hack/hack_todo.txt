@@ -1,0 +1,25 @@
+triangle demo ?  http://gnclmorais.github.io/paperjs-demos/cmyk.html
+https://github.com/gnclmorais/paperjs-demos
+
+more sketchjs port, like the ik
+
+https://github.com/M3kH/m3kh.github.io/blob/master/js/utils/backgrounds/base.js
+
+this is like a layer need to grab and see what
+
+
+https://github.com/jgebhardt/paperjs-demos/tree/master/turntable-spirograph
+
+
+snowflake tool, using blur
+http://hbuchel.github.io/gwnewyear/
+https://github.com/hbuchel/gwnewyear/blob/master/js/intro.js
+
+https://github.com/AskAlice/paperjs-paradox-polygon-fractal
+https://github.com/jasonwebb/SuperformulaSVG-for-web
+search github
+https://github.com/search?q=paperjs+demos
+https://github.com/search?q=paperjs
+
+--
+
