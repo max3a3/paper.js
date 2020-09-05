@@ -23,10 +23,6 @@ function createEllipse(center, radius) {
 
 let CircleCustomPaper = paper.Path.extend(
     {
-        _serializeFields: {
-            center:[],
-            radius:0
-        },
         _class: "Path",
         initialize: function CircleCustom(circleOption) {
             var center = Point.readNamed(arguments, 'center'),

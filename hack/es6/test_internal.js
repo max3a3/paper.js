@@ -303,6 +303,18 @@ function deserialize() {
     let group = new paper.Group()
     group.importJSON(data)
 }
+function jsongroup() {
+    let data = GROUP_SIMPLE
+ debugger
+    let jsonData = {children: data[1].children}
+    // need to delete all group specific field, just want the children?
+    // delete jsonData['applyMatrix']
+
+    //pass paper so group created has the same project
+    var group =new JsonGroupClassPaper(
+        {jsonData})
+
+}
 document.addEventListener('DOMContentLoaded', () => {
 
         var canvas = document.getElementById('canvas');
@@ -316,6 +328,13 @@ document.addEventListener('DOMContentLoaded', () => {
     $("#brush").click(() => btn_handler('brush'));
     $("#serialize").click(() => serialize());
     $("#deserialize").click(() => deserialize());
+    $("#jsongroup").click(() => jsongroup());
+    $("#dumppaper").click(()=>{
+            let value = paper.project.exportJSON({asString: false})
+            let val =JSON.stringify(value, undefined, 2)
+             console.log(val)
+        })
+
     $("#change_path_smooth").click(() => {
         myCustomPath.smoothFactor = myCustomPath.smoothFactor + 6  //calling btn_handler will clear project
     console.log("myCustomPath.smoothFactor",myCustomPath.smoothFactor)
