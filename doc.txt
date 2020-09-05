@@ -1,7 +1,21 @@
->>to check in new dist
-gulp build
+TODO
+ export ChangeFlag in paperscope
+ use newer acorn so our app don't need to include it
 
-then checkin the new file in dist folder, then refer to npm gith shouold work
+>>to check in new dist
+
+upgraded to gulp 4, rename old gulpfile to gulpfile_old
+  gulpfile is just a converted of gulp/tasks/build.js script which output full
+yarn run build
+#gulp build
+
+note the changes in the dist/dist_changelog file
+  checkin the new file in dist folder
+  force yarn to grab the latest version of the branch by deleting the reference in yarn.lock
+  check the updated yarn.lock match the latest commit
+
+
+
 ---
 some demo to create new paper item class\
   search for 'extend' in hack/es6
