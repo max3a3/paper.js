@@ -2,8 +2,8 @@
  * Paper.js - The Swiss Army Knife of Vector Graphics Scripting.
  * http://paperjs.org/
  *
- * Copyright (c) 2011 - 2019, Juerg Lehni & Jonathan Puckey
- * http://scratchdisk.com/ & https://puckey.studio/
+ * Copyright (c) 2011 - 2020, Jürg Lehni & Jonathan Puckey
+ * http://juerglehni.com/ & https://puckey.studio/
  *
  * Distributed under the MIT license. See LICENSE file for details.
  *
@@ -790,7 +790,7 @@ test('group.internalBounds with child and child.applyMatrix = false (#1250)', fu
             'group.internalBounds after scaling item1');
 });
 
-test('#1561 item._globalMatrix on item after empty symbol', function(){
+test('item._globalMatrix on item after empty symbol (#1561)', function() {
     var symbol = new SymbolItem(new Path());
     symbol.opacity = 0.5;
     symbol.skew(10);
@@ -798,3 +798,29 @@ test('#1561 item._globalMatrix on item after empty symbol', function(){
     view.update();
     equals(item._globalMatrix, new Matrix());
 });
+
+test('path.strokeBounds of open, circular arc (#1817)', function() {
+    var circle = new Path({
+        pathData: 'M8,16c0,-4.4 3.6,-8 8,-8c4.4,0 8,3.6 8,8',
+        strokeWidth: 8,
+        strokeColor: 'red'
+    });
+    equals(circle.strokeBounds, new Rectangle(4, 4, 24, 12),
+            'circle.strokeBounds');
+});
+
+test('path.strokeBounds applies stroke padding properly (#1824)', function() {
+    var ellipse = new Path.Ellipse({
+        point: [100, 100],
+        size: [50, 80],
+        strokeWidth: 32,
+        strokeColor: 'red'
+    });
+
+    ellipse.rotate(50);
+    equals(
+        ellipse.strokeBounds,
+        new Rectangle(74.39306, 91.93799, 101.21388, 96.12403),
+        'ellipse.strokeBounds'
+    );
+})

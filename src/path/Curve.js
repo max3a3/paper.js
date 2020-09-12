@@ -2,8 +2,8 @@
  * Paper.js - The Swiss Army Knife of Vector Graphics Scripting.
  * http://paperjs.org/
  *
- * Copyright (c) 2011 - 2019, Juerg Lehni & Jonathan Puckey
- * http://scratchdisk.com/ & https://puckey.studio/
+ * Copyright (c) 2011 - 2020, Jürg Lehni & Jonathan Puckey
+ * http://juerglehni.com/ & https://puckey.studio/
  *
  * Distributed under the MIT license. See LICENSE file for details.
  *
@@ -858,8 +858,8 @@ statics: /** @lends Curve */{
         }
 
         padding /= 2; // strokePadding is in width, not radius
-        var minPad = min[coord] - padding,
-            maxPad = max[coord] + padding;
+        var minPad = min[coord] + padding,
+            maxPad = max[coord] - padding;
         // Perform a rough bounds checking first: The curve can only extend the
         // current bounds if at least one value is outside the min-max range.
         if (    v0 < minPad || v1 < minPad || v2 < minPad || v3 < minPad ||
@@ -867,8 +867,11 @@ statics: /** @lends Curve */{
             if (v1 < v0 != v1 < v3 && v2 < v0 != v2 < v3) {
                 // If the values of a curve are sorted, the extrema are simply
                 // the start and end point.
-                add(v0, padding);
-                add(v3, padding);
+                // Only add strokeWidth to bounds for points which lie within 0
+                // < t < 1. The corner cases for cap and join are handled in
+                // getStrokeBounds()
+                add(v0, 0);
+                add(v3, 0);
             } else {
                 // Calculate derivative of our bezier polynomial, divided by 3.
                 // Doing so allows for simpler calculations of a, b, c and leads
@@ -882,9 +885,7 @@ statics: /** @lends Curve */{
                     // with radii in getStrokeBounds()
                     tMin = /*#=*/Numerical.CURVETIME_EPSILON,
                     tMax = 1 - tMin;
-                // Only add strokeWidth to bounds for points which lie within 0
-                // < t < 1 The corner cases for cap and join are handled in
-                // getStrokeBounds()
+                // See above for an explanation of padding = 0 here:
                 add(v3, 0);
                 for (var i = 0; i < count; i++) {
                     var t = roots[i],
@@ -2104,50 +2105,50 @@ new function() { // Scope for bezier intersection using fat-line clipping
 
     function getIntersections(curves1, curves2, include, matrix1, matrix2,
             _returnFirst) {
-        var self = !curves2;
+        var epsilon = /*#=*/Numerical.GEOMETRIC_EPSILON,
+            self = !curves2;
         if (self)
             curves2 = curves1;
         var length1 = curves1.length,
             length2 = curves2.length,
-            values2 = [],
-            arrays = [],
-            locations,
-            current;
-        // Cache values for curves2 as we re-iterate them for each in curves1.
-        for (var i = 0; i < length2; i++)
-            values2[i] = curves2[i].getValues(matrix2);
+            values1 = new Array(length1),
+            values2 = self ? values1 : new Array(length2),
+            locations = [];
+
         for (var i = 0; i < length1; i++) {
-            var curve1 = curves1[i],
-                values1 = self ? values2[i] : curve1.getValues(matrix1),
-                path1 = curve1.getPath();
-            // NOTE: Due to the nature of getCurveIntersections(), we use
-            // separate location arrays per path1, to make sure the circularity
-            // checks are not getting confused by locations on separate paths.
-            // The separate arrays are then flattened in the end.
-            if (path1 !== current) {
-                current = path1;
-                locations = [];
-                arrays.push(locations);
-            }
-            if (self) {
-                // First check for self-intersections within the same curve.
-                getSelfIntersection(values1, curve1, locations, include);
-            }
-            // Check for intersections with other curves.
-            // For self-intersection, we can start at i + 1 instead of 0.
-            for (var j = self ? i + 1 : 0; j < length2; j++) {
-                // There might be already one location from the above
-                // self-intersection check:
-                if (_returnFirst && locations.length)
-                    return locations;
-                getCurveIntersections(values1, values2[j], curve1, curves2[j],
-                        locations, include);
+            values1[i] = curves1[i].getValues(matrix1);
+        }
+        if (!self) {
+            for (var i = 0; i < length2; i++) {
+                values2[i] = curves2[i].getValues(matrix2);
             }
         }
-        // Flatten the list of location arrays to one array and return it.
-        locations = [];
-        for (var i = 0, l = arrays.length; i < l; i++) {
-            Base.push(locations, arrays[i]);
+        var boundsCollisions = CollisionDetection.findCurveBoundsCollisions(
+                values1, values2, epsilon);
+        for (var index1 = 0; index1 < length1; index1++) {
+            var curve1 = curves1[index1],
+                v1 = values1[index1];
+            if (self) {
+                // First check for self-intersections within the same curve.
+                getSelfIntersection(v1, curve1, locations, include);
+            }
+            // Check for intersections with potentially intersecting curves.
+            var collisions1 = boundsCollisions[index1];
+            if (collisions1) {
+                for (var j = 0; j < collisions1.length; j++) {
+                    // There might be already one location from the above
+                    // self-intersection check:
+                    if (_returnFirst && locations.length)
+                        return locations;
+                    var index2 = collisions1[j];
+                    if (!self || index2 > index1) {
+                        var curve2 = curves2[index2],
+                            v2 = values2[index2];
+                        getCurveIntersections(
+                                v1, v2, curve1, curve2, locations, include);
+                    }
+                }
+            }
         }
         return locations;
     }

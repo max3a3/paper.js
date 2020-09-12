@@ -250,6 +250,7 @@ new function() { // Injection scope for various item event handlers
      * @function
      * @param {Object} props
      * @return {Item} the item itself
+     * @chainable
      *
      * @example {@paperscript}
      * // Setting properties through an object literal
@@ -1207,19 +1208,32 @@ new function() { // Injection scope for various item event handlers
             var rotation = this.getRotation(),
                 decomposed = this._decomposed,
                 matrix = new Matrix(),
-                center = this.getPosition(true);
+                isZero = Numerical.isZero;
             // Create a matrix in which the scaling is applied in the non-
             // rotated state, so it is always applied before the rotation.
             // TODO: What about skewing? Do we need separately stored values for
             // these properties, and apply them separately from the matrix?
-            matrix.translate(center);
-            if (rotation)
-                matrix.rotate(rotation);
-            matrix.scale(scaling.x / current.x, scaling.y / current.y);
-            if (rotation)
-                matrix.rotate(-rotation);
-            matrix.translate(center.negate());
-            this.transform(matrix);
+            if (isZero(current.x) || isZero(current.y)) {
+                // If current scaling is destructive (at least one axis is 0),
+                // create a new matrix that applies the desired rotation,
+                // translation and scaling, without also preserving skewing.
+                matrix.translate(decomposed.translation);
+                if (rotation) {
+                    matrix.rotate(rotation);
+                }
+                matrix.scale(scaling.x, scaling.y);
+                this._matrix.set(matrix);
+            } else {
+                var center = this.getPosition(true);
+                matrix.translate(center);
+                if (rotation)
+                    matrix.rotate(rotation);
+                matrix.scale(scaling.x / current.x, scaling.y / current.y);
+                if (rotation)
+                    matrix.rotate(-rotation);
+                matrix.translate(center.negate());
+                this.transform(matrix);
+            }
             if (decomposed) {
                 decomposed.scaling = scaling;
                 this._decomposed = decomposed;
@@ -1243,7 +1257,7 @@ new function() { // Injection scope for various item event handlers
         // NOTE: calling initialize() also calls #_changed() for us, through its
         // call to #set() / #reset(), and this also handles _applyMatrix for us.
         var matrix = this._matrix;
-        matrix.initialize.apply(matrix, arguments);
+        matrix.set.apply(matrix, arguments);
     },
 
     /**
@@ -1611,6 +1625,7 @@ new function() { // Injection scope for various item event handlers
      * @param {Object} [options={ insert: true, deep: true }]
      *
      * @return {Item} the newly cloned item
+     * @chainable
      *
      * @example {@paperscript}
      * // Cloning items:
@@ -1877,14 +1892,16 @@ new function() { // Injection scope for various item event handlers
 },
 new function() { // Injection scope for hit-test functions shared with project
     function hitTest(/* point, options */) {
+        var args = arguments;
         return this._hitTest(
-                Point.read(arguments),
-                HitResult.getOptions(arguments));
+                Point.read(args),
+                HitResult.getOptions(args));
     }
 
     function hitTestAll(/* point, options */) {
-        var point = Point.read(arguments),
-            options = HitResult.getOptions(arguments),
+        var args = arguments,
+            point = Point.read(args),
+            options = HitResult.getOptions(args),
             all = [];
         this._hitTest(point, new Base({ all: all }, options));
         return all;
@@ -2218,8 +2235,9 @@ new function() { // Injection scope for hit-test functions shared with project
      * that x-value). Partial matching does work for {@link Item#data}.
      *
      * Matching items against a rectangular area is also possible, by setting
-     * either `options.inside` or `options.overlapping` to a rectangle describing
-     * the area in which the items either have to be fully or partly contained.
+     * either `options.inside` or `options.overlapping` to a rectangle
+     * describing the area in which the items either have to be fully or partly
+     * contained.
      *
      * See {@link Project#getItems(options)} for a selection of illustrated
      * examples.
@@ -2230,12 +2248,12 @@ new function() { // Injection scope for hit-test functions shared with project
      *     item, allowing the definition of more flexible item checks that are
      *     not bound to properties. If no other match properties are defined,
      *     this function can also be passed instead of the `options` object
-     * @option options.class {Function} the constructor function of the item type
-     *     to match against
-     * @option options.inside {Rectangle} the rectangle in which the items need to
-     *     be fully contained
-     * @option options.overlapping {Rectangle} the rectangle with which the items
-     *     need to at least partly overlap
+     * @option options.class {Function} the constructor function of the item
+     *     type to match against
+     * @option options.inside {Rectangle} the rectangle in which the items need
+     *     to be fully contained
+     * @option options.overlapping {Rectangle} the rectangle with which the
+     *     items need to at least partly overlap
      *
      * @param {Object|Function} options the criteria to match against
      * @return {Item[]} the list of matching descendant items
@@ -2256,9 +2274,9 @@ new function() { // Injection scope for hit-test functions shared with project
      * See {@link Project#getItems(match)} for a selection of illustrated
      * examples.
      *
-     * @param {Object|Function} match the criteria to match against
+     * @param {Object|Function} options the criteria to match against
      * @return {Item} the first descendant item matching the given criteria
-     * @see #getItems(match)
+     * @see #getItems(options)
      */
     getItem: function(options) {
         return Item._getItems(this, options, this._matrix, null, true)[0]
@@ -2661,6 +2679,7 @@ new function() { // Injection scope for hit-test functions shared with project
      * @param {Project|Layer|Group|CompoundPath} owner the item or project to
      * add the item to
      * @return {Item} the item itself, if it was successfully added
+     * @chainable
      */
     addTo: function(owner) {
         return owner._insertItem(undefined, this);
@@ -2673,6 +2692,7 @@ new function() { // Injection scope for hit-test functions shared with project
      * @param {Project|Layer|Group|CompoundPath} owner the item or project to
      * copy the item to
      * @return {Item} the new copy of the item, if it was successfully added
+     * @chainable
      */
     copyTo: function(owner) {
         return this.clone(false).addTo(owner);
@@ -2931,7 +2951,7 @@ new function() { // Injection scope for hit-test functions shared with project
      * defined in such a way, e.g. if one is a descendant of the other.
      */
     _getOrder: function(item) {
-        // Private method that produces a list of anchestors, starting with the
+        // Private method that produces a list of ancestors, starting with the
         // root and ending with the actual element as the last entry.
         function getList(item) {
             var list = [];
@@ -3328,8 +3348,9 @@ new function() { // Injection scope for hit-test functions shared with project
 }, Base.each(['rotate', 'scale', 'shear', 'skew'], function(key) {
     var rotate = key === 'rotate';
     this[key] = function(/* value, center */) {
-        var value = (rotate ? Base : Point).read(arguments),
-            center = Point.read(arguments, 0, { readNull: true });
+        var args = arguments,
+            value = (rotate ? Base : Point).read(args),
+            center = Point.read(args, 0, { readNull: true });
         return this.transform(new Matrix()[key](value,
                 center || this.getPosition(true)));
     };
@@ -3462,7 +3483,7 @@ new function() { // Injection scope for hit-test functions shared with project
      *
      * @name Item#shear
      * @function
-     * @param {Point} shear the horziontal and vertical shear factors as a point
+     * @param {Point} shear the horizontal and vertical shear factors as a point
      * @param {Point} [center={@link Item#position}]
      * @see Matrix#shear(shear[, center])
      */
@@ -3484,7 +3505,7 @@ new function() { // Injection scope for hit-test functions shared with project
      *
      * @name Item#skew
      * @function
-     * @param {Point} skew the horziontal and vertical skew angles in degrees
+     * @param {Point} skew the horizontal and vertical skew angles in degrees
      * @param {Point} [center={@link Item#position}]
      * @see Matrix#shear(skew[, center])
      */
@@ -3509,19 +3530,22 @@ new function() { // Injection scope for hit-test functions shared with project
     // @param {String[]} flags array of any of the following: 'objects',
     //        'children', 'fill-gradients', 'fill-patterns', 'stroke-patterns',
     //        'lines'. Default: ['objects', 'children']
-    transform: function(matrix, _applyMatrix, _applyRecursively,
-            _setApplyMatrix) {
+    transform: function(matrix, _applyRecursively, _setApplyMatrix) {
         var _matrix = this._matrix,
-            // If no matrix is provided, or the matrix is the identity, we might
-            // still have some work to do in case _applyMatrix is true
             transformMatrix = matrix && !matrix.isIdentity(),
-            applyMatrix = (_applyMatrix || this._applyMatrix)
+            // If no matrix is provided, or the matrix is the identity, we might
+            // still have some work to do: _setApplyMatrix or _applyRecursively.
+            applyMatrix = (
+                _setApplyMatrix && this._canApplyMatrix ||
+                this._applyMatrix && (
                     // Don't apply _matrix if the result of concatenating with
                     // matrix would be identity.
-                    && ((!_matrix.isIdentity() || transformMatrix)
-                        // Even if it's an identity matrix, we still need to
-                        // recursively apply the matrix to children.
-                        || _applyMatrix && _applyRecursively && this._children);
+                    transformMatrix || !_matrix.isIdentity() ||
+                    // Even if it's an identity matrix, we may still need to
+                    // recursively apply the matrix to children.
+                    _applyRecursively && this._children
+                )
+            );
         // Bail out if there is nothing to do.
         if (!transformMatrix && !applyMatrix)
             return this;
@@ -3553,8 +3577,9 @@ new function() { // Injection scope for hit-test functions shared with project
         // internal _matrix transformations to the item's content.
         // Application is not possible on Raster, PointText, SymbolItem, since
         // the matrix is where the actual transformation state is stored.
-        if (applyMatrix && (applyMatrix = this._transformContent(_matrix,
-                _applyRecursively, _setApplyMatrix))) {
+
+        if (applyMatrix && (applyMatrix = this._transformContent(
+                _matrix, _applyRecursively, _setApplyMatrix))) {
             // Pivot is provided in the parent's coordinate system, so transform
             // it along too.
             var pivot = this._pivot;
@@ -4134,6 +4159,7 @@ new function() { // Injection scope for hit-test functions shared with project
      *     occurs, receiving a {@link MouseEvent} or {@link Event} object as its
      *     sole argument
      * @return {Item} this item itself, so calls can be chained
+     * @chainable
      *
      * @example {@paperscript}
      * // Change the fill color of the path to red when the mouse enters its
@@ -4165,6 +4191,7 @@ new function() { // Injection scope for hit-test functions shared with project
      *     properties: {@values frame, mousedown, mouseup, mousedrag, click,
      *     doubleclick, mousemove, mouseenter, mouseleave}
      * @return {Item} this item itself, so calls can be chained
+     * @chainable
      *
      * @example {@paperscript}
      * // Change the fill color of the path to red when the mouse enters its
@@ -4224,6 +4251,7 @@ new function() { // Injection scope for hit-test functions shared with project
      *     'mouseenter', 'mouseleave'}
      * @param {Function} function the function to be detached
      * @return {Item} this item itself, so calls can be chained
+     * @chainable
      */
     /**
      * Detach one or more event handlers to the item.
@@ -4234,6 +4262,7 @@ new function() { // Injection scope for hit-test functions shared with project
      *     properties: {@values frame, mousedown, mouseup, mousedrag, click,
      *     doubleclick, mousemove, mouseenter, mouseleave}
      * @return {Item} this item itself, so calls can be chained
+     * @chainable
      */
 
     /**
@@ -4360,7 +4389,7 @@ new function() { // Injection scope for hit-test functions shared with project
         // Exclude Raster items since they never draw a stroke and handle
         // opacity by themselves (they also don't call _setStyles)
         var blendMode = this._blendMode,
-            opacity = this._opacity,
+            opacity = Numerical.clamp(this._opacity, 0, 1),
             normalBlend = blendMode === 'normal',
             nativeBlend = BlendMode.nativeModes[blendMode],
             // Determine if we can draw directly, or if we need to draw into a

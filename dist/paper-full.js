@@ -1,22 +1,22 @@
 /*!
- * Paper.js v0.12.3-wng_test - The Swiss Army Knife of Vector Graphics Scripting.
+ * Paper.js v0.12.11 - The Swiss Army Knife of Vector Graphics Scripting.
  * http://paperjs.org/
  *
- * Copyright (c) 2011 - 2019, Juerg Lehni & Jonathan Puckey
- * http://scratchdisk.com/ & https://puckey.studio/
+ * Copyright (c) 2011 - 2020, Jürg Lehni & Jonathan Puckey
+ * http://juerglehni.com/ & https://puckey.studio/
  *
  * Distributed under the MIT license. See LICENSE file for details.
  *
  * All rights reserved.
  *
- * Date: Sun Jun 21 13:18:24 2020 -0700
+ * Date: Fri Jun 19 19:14:33 2020 +0200
  *
  ***
  *
  * Straps.js - Class inheritance library with support for bean-style accessors
  *
- * Copyright (c) 2006 - 2019 Juerg Lehni
- * http://scratchdisk.com/
+ * Copyright (c) 2006 - 2020 Jürg Lehni
+ * http://juerglehni.com/
  *
  * Distributed under the MIT license.
  *
@@ -378,26 +378,52 @@ statics: {
 
 	readNamed: function(list, name, start, options, amount) {
 		var value = this.getNamed(list, name),
-			hasObject = value !== undefined;
-		if (hasObject) {
+			hasValue = value !== undefined;
+		if (hasValue) {
 			var filtered = list.__filtered;
 			if (!filtered) {
-				filtered = list.__filtered = Base.create(list[0]);
-				filtered.__unfiltered = list[0];
+				var source = this.getSource(list);
+				filtered = list.__filtered = Base.create(source);
+				filtered.__unfiltered = source;
 			}
 			filtered[name] = undefined;
 		}
-		var l = hasObject ? [value] : list,
-			res = this.read(l, start, options, amount);
-		return res;
+		return this.read(hasValue ? [value] : list, start, options, amount);
+	},
+
+	readSupported: function(list, dest) {
+		var source = this.getSource(list),
+			that = this,
+			read = false;
+		if (source) {
+			Object.keys(source).forEach(function(key) {
+				if (key in dest) {
+					var value = that.readNamed(list, key);
+					if (value !== undefined) {
+						dest[key] = value;
+					}
+					read = true;
+				}
+			});
+		}
+		return read;
+	},
+
+	getSource: function(list) {
+		var source = list.__source;
+		if (source === undefined) {
+			var arg = list.length === 1 && list[0];
+			source = list.__source = arg && Base.isPlainObject(arg)
+				? arg : null;
+		}
+		return source;
 	},
 
 	getNamed: function(list, name) {
-		var arg = list[0];
-		if (list._hasObject === undefined)
-			list._hasObject = list.length === 1 && Base.isPlainObject(arg);
-		if (list._hasObject)
-			return name ? arg[name] : list.__filtered || arg;
+		var source = this.getSource(list);
+		if (source) {
+			return name ? source[name] : list.__filtered || source;
+		}
 	},
 
 	hasNamed: function(list, name) {
@@ -795,7 +821,7 @@ var PaperScope = Base.extend({
 		}
 	},
 
-	version: "0.12.3-wng_test",
+	version: "0.12.11",
 
 	getView: function() {
 		var project = this.project;
@@ -915,6 +941,164 @@ var PaperScopeItem = Base.extend(Emitter, {
 		return this._scope.getView();
 	}
 });
+
+var CollisionDetection = {
+	findItemBoundsCollisions: function(items1, items2, tolerance) {
+		function getBounds(items) {
+			var bounds = new Array(items.length);
+			for (var i = 0; i < items.length; i++) {
+				var rect = items[i].getBounds();
+				bounds[i] = [rect.left, rect.top, rect.right, rect.bottom];
+			}
+			return bounds;
+		}
+
+		var bounds1 = getBounds(items1),
+			bounds2 = !items2 || items2 === items1
+				? bounds1
+				: getBounds(items2);
+		return this.findBoundsCollisions(bounds1, bounds2, tolerance || 0);
+	},
+
+	findCurveBoundsCollisions: function(curves1, curves2, tolerance, bothAxis) {
+		function getBounds(curves) {
+			var min = Math.min,
+				max = Math.max,
+				bounds = new Array(curves.length);
+			for (var i = 0; i < curves.length; i++) {
+				var v = curves[i];
+				bounds[i] = [
+					min(v[0], v[2], v[4], v[6]),
+					min(v[1], v[3], v[5], v[7]),
+					max(v[0], v[2], v[4], v[6]),
+					max(v[1], v[3], v[5], v[7])
+				];
+			}
+			return bounds;
+		}
+
+		var bounds1 = getBounds(curves1),
+			bounds2 = !curves2 || curves2 === curves1
+				? bounds1
+				: getBounds(curves2);
+		if (bothAxis) {
+			var hor = this.findBoundsCollisions(
+					bounds1, bounds2, tolerance || 0, false, true),
+				ver = this.findBoundsCollisions(
+					bounds1, bounds2, tolerance || 0, true, true),
+				list = [];
+			for (var i = 0, l = hor.length; i < l; i++) {
+				list[i] = { hor: hor[i], ver: ver[i] };
+			}
+			return list;
+		}
+		return this.findBoundsCollisions(bounds1, bounds2, tolerance || 0);
+	},
+
+	findBoundsCollisions: function(boundsA, boundsB, tolerance,
+		sweepVertical, onlySweepAxisCollisions) {
+		var self = !boundsB || boundsA === boundsB,
+			allBounds = self ? boundsA : boundsA.concat(boundsB),
+			lengthA = boundsA.length,
+			lengthAll = allBounds.length;
+
+		function binarySearch(indices, coord, value) {
+			var lo = 0,
+				hi = indices.length;
+			while (lo < hi) {
+				var mid = (hi + lo) >>> 1;
+				if (allBounds[indices[mid]][coord] < value) {
+					lo = mid + 1;
+				} else {
+					hi = mid;
+				}
+			}
+			return lo - 1;
+		}
+
+		var pri0 = sweepVertical ? 1 : 0,
+			pri1 = pri0 + 2,
+			sec0 = sweepVertical ? 0 : 1,
+			sec1 = sec0 + 2;
+		var allIndicesByPri0 = new Array(lengthAll);
+		for (var i = 0; i < lengthAll; i++) {
+			allIndicesByPri0[i] = i;
+		}
+		allIndicesByPri0.sort(function(i1, i2) {
+			return allBounds[i1][pri0] - allBounds[i2][pri0];
+		});
+		var activeIndicesByPri1 = [],
+			allCollisions = new Array(lengthA);
+		for (var i = 0; i < lengthAll; i++) {
+			var curIndex = allIndicesByPri0[i],
+				curBounds = allBounds[curIndex],
+				origIndex = self ? curIndex : curIndex - lengthA,
+				isCurrentA = curIndex < lengthA,
+				isCurrentB = self || !isCurrentA,
+				curCollisions = isCurrentA ? [] : null;
+			if (activeIndicesByPri1.length) {
+				var pruneCount = binarySearch(activeIndicesByPri1, pri1,
+						curBounds[pri0] - tolerance) + 1;
+				activeIndicesByPri1.splice(0, pruneCount);
+				if (self && onlySweepAxisCollisions) {
+					curCollisions = curCollisions.concat(activeIndicesByPri1);
+					for (var j = 0; j < activeIndicesByPri1.length; j++) {
+						var activeIndex = activeIndicesByPri1[j];
+						allCollisions[activeIndex].push(origIndex);
+					}
+				} else {
+					var curSec1 = curBounds[sec1],
+						curSec0 = curBounds[sec0];
+					for (var j = 0; j < activeIndicesByPri1.length; j++) {
+						var activeIndex = activeIndicesByPri1[j],
+							activeBounds = allBounds[activeIndex],
+							isActiveA = activeIndex < lengthA,
+							isActiveB = self || activeIndex >= lengthA;
+
+						if (
+							onlySweepAxisCollisions ||
+							(
+								isCurrentA && isActiveB ||
+								isCurrentB && isActiveA
+							) && (
+								curSec1 >= activeBounds[sec0] - tolerance &&
+								curSec0 <= activeBounds[sec1] + tolerance
+							)
+						) {
+							if (isCurrentA && isActiveB) {
+								curCollisions.push(
+									self ? activeIndex : activeIndex - lengthA);
+							}
+							if (isCurrentB && isActiveA) {
+								allCollisions[activeIndex].push(origIndex);
+							}
+						}
+					}
+				}
+			}
+			if (isCurrentA) {
+				if (boundsA === boundsB) {
+					curCollisions.push(curIndex);
+				}
+				allCollisions[curIndex] = curCollisions;
+			}
+			if (activeIndicesByPri1.length) {
+				var curPri1 = curBounds[pri1],
+					index = binarySearch(activeIndicesByPri1, pri1, curPri1);
+				activeIndicesByPri1.splice(index + 1, 0, curIndex);
+			} else {
+				activeIndicesByPri1.push(curIndex);
+			}
+		}
+		for (var i = 0; i < allCollisions.length; i++) {
+			var collisions = allCollisions[i];
+			if (collisions) {
+				collisions.sort(function(i1, i2) { return i1 - i2; });
+			}
+		}
+		return allCollisions;
+	}
+};
 
 var Formatter = Base.extend({
 	initialize: function(precision) {
@@ -1341,11 +1525,12 @@ var Point = Base.extend({
 	},
 
 	getDistance: function() {
-		var point = Point.read(arguments),
+		var args = arguments,
+			point = Point.read(args),
 			x = point.x - this.x,
 			y = point.y - this.y,
 			d = x * x + y * y,
-			squared = Base.read(arguments);
+			squared = Base.read(args);
 		return squared ? d : Math.sqrt(d);
 	},
 
@@ -1412,8 +1597,9 @@ var Point = Base.extend({
 	},
 
 	isClose: function() {
-		var point = Point.read(arguments),
-			tolerance = Base.read(arguments);
+		var args = arguments,
+			point = Point.read(args),
+			tolerance = Base.read(args);
 		return this.getDistance(point) <= tolerance;
 	},
 
@@ -1464,8 +1650,9 @@ var Point = Base.extend({
 
 	statics: {
 		min: function() {
-			var point1 = Point.read(arguments),
-				point2 = Point.read(arguments);
+			var args = arguments,
+				point1 = Point.read(args),
+				point2 = Point.read(args);
 			return new Point(
 				Math.min(point1.x, point2.x),
 				Math.min(point1.y, point2.y)
@@ -1473,8 +1660,9 @@ var Point = Base.extend({
 		},
 
 		max: function() {
-			var point1 = Point.read(arguments),
-				point2 = Point.read(arguments);
+			var args = arguments,
+				point1 = Point.read(args),
+				point2 = Point.read(args);
 			return new Point(
 				Math.max(point1.x, point2.x),
 				Math.max(point1.y, point2.y)
@@ -1721,7 +1909,8 @@ var Rectangle = Base.extend({
 	beans: true,
 
 	initialize: function Rectangle(arg0, arg1, arg2, arg3) {
-		var type = typeof arg0,
+		var args = arguments,
+			type = typeof arg0,
 			read;
 		if (type === 'number') {
 			this._set(arg0, arg1, arg2, arg3);
@@ -1729,7 +1918,7 @@ var Rectangle = Base.extend({
 		} else if (type === 'undefined' || arg0 === null) {
 			this._set(0, 0, 0, 0);
 			read = arg0 === null ? 1 : 0;
-		} else if (arguments.length === 1) {
+		} else if (args.length === 1) {
 			if (Array.isArray(arg0)) {
 				this._set.apply(this, arg0);
 				read = 1;
@@ -1739,20 +1928,20 @@ var Rectangle = Base.extend({
 				read = 1;
 			} else if (arg0.from === undefined && arg0.to === undefined) {
 				this._set(0, 0, 0, 0);
-				Base.filter(this, arg0);
-				read = 1;
+				if (Base.readSupported(args, this)) {
+					read = 1;
+				}
 			}
 		}
 		if (read === undefined) {
-			var frm = Point.readNamed(arguments, 'from'),
-				next = Base.peek(arguments),
+			var frm = Point.readNamed(args, 'from'),
+				next = Base.peek(args),
 				x = frm.x,
 				y = frm.y,
 				width,
 				height;
-			if (next && next.x !== undefined
-					|| Base.hasNamed(arguments, 'to')) {
-				var to = Point.readNamed(arguments, 'to');
+			if (next && next.x !== undefined || Base.hasNamed(args, 'to')) {
+				var to = Point.readNamed(args, 'to');
 				width = to.x - x;
 				height = to.y - y;
 				if (width < 0) {
@@ -1764,16 +1953,16 @@ var Rectangle = Base.extend({
 					height = -height;
 				}
 			} else {
-				var size = Size.read(arguments);
+				var size = Size.read(args);
 				width = size.width;
 				height = size.height;
 			}
 			this._set(x, y, width, height);
-			read = arguments.__index;
-			var filtered = arguments.__filtered;
-			if (filtered)
-				this.__filtered = filtered;
+			read = args.__index;
 		}
+		var filtered = args.__filtered;
+		if (filtered)
+			this.__filtered = filtered;
 		if (this.__read)
 			this.__read = read;
 		return this;
@@ -2131,10 +2320,11 @@ var Matrix = Base.extend({
 	_class: 'Matrix',
 
 	initialize: function Matrix(arg, _dontNotify) {
-		var count = arguments.length,
+		var args = arguments,
+			count = args.length,
 			ok = true;
 		if (count >= 6) {
-			this._set.apply(this, arguments);
+			this._set.apply(this, args);
 		} else if (count === 1 || count === 2) {
 			if (arg instanceof Matrix) {
 				this._set(arg._a, arg._b, arg._c, arg._d, arg._tx, arg._ty,
@@ -2215,8 +2405,7 @@ var Matrix = Base.extend({
 	apply: function(recursively, _setApplyMatrix) {
 		var owner = this._owner;
 		if (owner) {
-			owner.transform(null, true, Base.pick(recursively, true),
-					_setApplyMatrix);
+			owner.transform(null, Base.pick(recursively, true), _setApplyMatrix);
 			return this.isIdentity();
 		}
 		return false;
@@ -2233,8 +2422,9 @@ var Matrix = Base.extend({
 	},
 
 	scale: function() {
-		var scale = Point.read(arguments),
-			center = Point.read(arguments, 0, { readNull: true });
+		var args = arguments,
+			scale = Point.read(args),
+			center = Point.read(args, 0, { readNull: true });
 		if (center)
 			this.translate(center);
 		this._a *= scale.x;
@@ -2271,8 +2461,9 @@ var Matrix = Base.extend({
 	},
 
 	shear: function() {
-		var shear = Point.read(arguments),
-			center = Point.read(arguments, 0, { readNull: true });
+		var args = arguments,
+			shear = Point.read(args),
+			center = Point.read(args, 0, { readNull: true });
 		if (center)
 			this.translate(center);
 		var a = this._a,
@@ -2288,8 +2479,9 @@ var Matrix = Base.extend({
 	},
 
 	skew: function() {
-		var skew = Point.read(arguments),
-			center = Point.read(arguments, 0, { readNull: true }),
+		var args = arguments,
+			skew = Point.read(args),
+			center = Point.read(args, 0, { readNull: true }),
 			toRadians = Math.PI / 180,
 			shear = new Point(Math.tan(skew.x * toRadians),
 				Math.tan(skew.y * toRadians));
@@ -3468,15 +3660,25 @@ new function() {
 			var rotation = this.getRotation(),
 				decomposed = this._decomposed,
 				matrix = new Matrix(),
-				center = this.getPosition(true);
-			matrix.translate(center);
-			if (rotation)
-				matrix.rotate(rotation);
-			matrix.scale(scaling.x / current.x, scaling.y / current.y);
-			if (rotation)
-				matrix.rotate(-rotation);
-			matrix.translate(center.negate());
-			this.transform(matrix);
+				isZero = Numerical.isZero;
+			if (isZero(current.x) || isZero(current.y)) {
+				matrix.translate(decomposed.translation);
+				if (rotation) {
+					matrix.rotate(rotation);
+				}
+				matrix.scale(scaling.x, scaling.y);
+				this._matrix.set(matrix);
+			} else {
+				var center = this.getPosition(true);
+				matrix.translate(center);
+				if (rotation)
+					matrix.rotate(rotation);
+				matrix.scale(scaling.x / current.x, scaling.y / current.y);
+				if (rotation)
+					matrix.rotate(-rotation);
+				matrix.translate(center.negate());
+				this.transform(matrix);
+			}
 			if (decomposed) {
 				decomposed.scaling = scaling;
 				this._decomposed = decomposed;
@@ -3490,7 +3692,7 @@ new function() {
 
 	setMatrix: function() {
 		var matrix = this._matrix;
-		matrix.initialize.apply(matrix, arguments);
+		matrix.set.apply(matrix, arguments);
 	},
 
 	getGlobalMatrix: function(_dontClone) {
@@ -3754,14 +3956,16 @@ new function() {
 },
 new function() {
 	function hitTest() {
+		var args = arguments;
 		return this._hitTest(
-				Point.read(arguments),
-				HitResult.getOptions(arguments));
+				Point.read(args),
+				HitResult.getOptions(args));
 	}
 
 	function hitTestAll() {
-		var point = Point.read(arguments),
-			options = HitResult.getOptions(arguments),
+		var args = arguments,
+			point = Point.read(args),
+			options = HitResult.getOptions(args),
 			all = [];
 		this._hitTest(point, new Base({ all: all }, options));
 		return all;
@@ -4310,8 +4514,9 @@ new function() {
 }, Base.each(['rotate', 'scale', 'shear', 'skew'], function(key) {
 	var rotate = key === 'rotate';
 	this[key] = function() {
-		var value = (rotate ? Base : Point).read(arguments),
-			center = Point.read(arguments, 0, { readNull: true });
+		var args = arguments,
+			value = (rotate ? Base : Point).read(args),
+			center = Point.read(args, 0, { readNull: true });
 		return this.transform(new Matrix()[key](value,
 				center || this.getPosition(true)));
 	};
@@ -4321,13 +4526,16 @@ new function() {
 		return this.transform(mx.translate.apply(mx, arguments));
 	},
 
-	transform: function(matrix, _applyMatrix, _applyRecursively,
-			_setApplyMatrix) {
+	transform: function(matrix, _applyRecursively, _setApplyMatrix) {
 		var _matrix = this._matrix,
 			transformMatrix = matrix && !matrix.isIdentity(),
-			applyMatrix = (_applyMatrix || this._applyMatrix)
-					&& ((!_matrix.isIdentity() || transformMatrix)
-						|| _applyMatrix && _applyRecursively && this._children);
+			applyMatrix = (
+				_setApplyMatrix && this._canApplyMatrix ||
+				this._applyMatrix && (
+					transformMatrix || !_matrix.isIdentity() ||
+					_applyRecursively && this._children
+				)
+			);
 		if (!transformMatrix && !applyMatrix)
 			return this;
 		if (transformMatrix) {
@@ -4342,8 +4550,9 @@ new function() {
 			if (strokeColor)
 				strokeColor.transform(matrix);
 		}
-		if (applyMatrix && (applyMatrix = this._transformContent(_matrix,
-				_applyRecursively, _setApplyMatrix))) {
+
+		if (applyMatrix && (applyMatrix = this._transformContent(
+				_matrix, _applyRecursively, _setApplyMatrix))) {
 			var pivot = this._pivot;
 			if (pivot)
 				_matrix._transformPoint(pivot, pivot, true);
@@ -4383,9 +4592,7 @@ new function() {
 		var children = this._children;
 		if (children) {
 			for (var i = 0, l = children.length; i < l; i++) {
-				let childrenApplyMatrix = children[i].applyMatrix
-				children[i].transform(matrix, childrenApplyMatrix, applyRecursively,
-					setApplyMatrix);
+				children[i].transform(matrix, applyRecursively, setApplyMatrix);
 			}
 			return true;
 		}
@@ -4489,7 +4696,7 @@ new function() {
 		}
 
 		var blendMode = this._blendMode,
-			opacity = this._opacity,
+			opacity = Numerical.clamp(this._opacity, 0, 1),
 			normalBlend = blendMode === 'normal',
 			nativeBlend = BlendMode.nativeModes[blendMode],
 			direct = normalBlend && opacity === 1
@@ -4840,7 +5047,7 @@ var Shape = Item.extend({
 				width = size.width,
 				height = size.height;
 			if (type === 'rectangle') {
-				this._radius.set(Size.min(this._radius, size.divide(2)));
+				this._radius.set(Size.min(this._radius, size.divide(2).abs()));
 			} else if (type === 'circle') {
 				width = height = (width + height) / 2;
 				this._radius = width / 2;
@@ -5078,34 +5285,38 @@ new function() {
 
 statics: new function() {
 	function createShape(type, point, size, radius, args) {
-		var item = new Shape(Base.getNamed(args), point);
+		var item = Base.create(Shape.prototype);
 		item._type = type;
 		item._size = size;
 		item._radius = radius;
+		item._initialize(Base.getNamed(args), point);
 		return item;
 	}
 
 	return {
 		Circle: function() {
-			var center = Point.readNamed(arguments, 'center'),
-				radius = Base.readNamed(arguments, 'radius');
+			var args = arguments,
+				center = Point.readNamed(args, 'center'),
+				radius = Base.readNamed(args, 'radius');
 			return createShape('circle', center, new Size(radius * 2), radius,
-					arguments);
+					args);
 		},
 
 		Rectangle: function() {
-			var rect = Rectangle.readNamed(arguments, 'rectangle'),
-				radius = Size.min(Size.readNamed(arguments, 'radius'),
+			var args = arguments,
+				rect = Rectangle.readNamed(args, 'rectangle'),
+				radius = Size.min(Size.readNamed(args, 'radius'),
 						rect.getSize(true).divide(2));
 			return createShape('rectangle', rect.getCenter(true),
-					rect.getSize(true), radius, arguments);
+					rect.getSize(true), radius, args);
 		},
 
 		Ellipse: function() {
-			var ellipse = Shape._readEllipse(arguments),
+			var args = arguments,
+				ellipse = Shape._readEllipse(args),
 				radius = ellipse.radius;
 			return createShape('ellipse', ellipse.center, radius.multiply(2),
-					radius, arguments);
+					radius, args);
 		},
 
 		_readEllipse: function(args) {
@@ -5125,7 +5336,6 @@ statics: new function() {
 }});
 
 var Raster = Item.extend({
-}, {
 	_class: 'Raster',
 	_applyMatrix: false,
 	_canApplyMatrix: false,
@@ -5149,7 +5359,7 @@ var Raster = Item.extend({
 						? source
 						: null;
 			if (object && object !== Item.NO_INSERT) {
-				if (object.getContent || object.naturalHeight != null) {
+				if (object.getContext || object.naturalHeight != null) {
 					image = object;
 				} else if (object) {
 					var size = Size.read(arguments);
@@ -5465,8 +5675,9 @@ var Raster = Item.extend({
 	},
 
 	setPixel: function() {
-		var point = Point.read(arguments),
-			color = Color.read(arguments),
+		var args = arguments,
+			point = Point.read(args),
+			color = Color.read(args),
 			components = color._convert('rgb'),
 			alpha = color._alpha,
 			ctx = this.getContext(true),
@@ -5524,7 +5735,7 @@ var Raster = Item.extend({
 	_draw: function(ctx, param, viewMatrix) {
 		var element = this.getElement();
 		if (element && element.width > 0 && element.height > 0) {
-			ctx.globalAlpha = this._opacity;
+			ctx.globalAlpha = Numerical.clamp(this._opacity, 0, 1);
 
 			this._setStyles(ctx, param, viewMatrix);
 
@@ -6599,13 +6810,13 @@ statics: {
 		}
 
 		padding /= 2;
-		var minPad = min[coord] - padding,
-			maxPad = max[coord] + padding;
+		var minPad = min[coord] + padding,
+			maxPad = max[coord] - padding;
 		if (    v0 < minPad || v1 < minPad || v2 < minPad || v3 < minPad ||
 				v0 > maxPad || v1 > maxPad || v2 > maxPad || v3 > maxPad) {
 			if (v1 < v0 != v1 < v3 && v2 < v0 != v2 < v3) {
-				add(v0, padding);
-				add(v3, padding);
+				add(v0, 0);
+				add(v3, 0);
 			} else {
 				var a = 3 * (v1 - v2) - v0 + v3,
 					b = 2 * (v0 + v2) - 4 * v1,
@@ -7304,39 +7515,46 @@ new function() {
 
 	function getIntersections(curves1, curves2, include, matrix1, matrix2,
 			_returnFirst) {
-		var self = !curves2;
+		var epsilon = 1e-7,
+			self = !curves2;
 		if (self)
 			curves2 = curves1;
 		var length1 = curves1.length,
 			length2 = curves2.length,
-			values2 = [],
-			arrays = [],
-			locations,
-			current;
-		for (var i = 0; i < length2; i++)
-			values2[i] = curves2[i].getValues(matrix2);
+			values1 = new Array(length1),
+			values2 = self ? values1 : new Array(length2),
+			locations = [];
+
 		for (var i = 0; i < length1; i++) {
-			var curve1 = curves1[i],
-				values1 = self ? values2[i] : curve1.getValues(matrix1),
-				path1 = curve1.getPath();
-			if (path1 !== current) {
-				current = path1;
-				locations = [];
-				arrays.push(locations);
-			}
-			if (self) {
-				getSelfIntersection(values1, curve1, locations, include);
-			}
-			for (var j = self ? i + 1 : 0; j < length2; j++) {
-				if (_returnFirst && locations.length)
-					return locations;
-				getCurveIntersections(values1, values2[j], curve1, curves2[j],
-						locations, include);
+			values1[i] = curves1[i].getValues(matrix1);
+		}
+		if (!self) {
+			for (var i = 0; i < length2; i++) {
+				values2[i] = curves2[i].getValues(matrix2);
 			}
 		}
-		locations = [];
-		for (var i = 0, l = arrays.length; i < l; i++) {
-			Base.push(locations, arrays[i]);
+		var boundsCollisions = CollisionDetection.findCurveBoundsCollisions(
+				values1, values2, epsilon);
+		for (var index1 = 0; index1 < length1; index1++) {
+			var curve1 = curves1[index1],
+				v1 = values1[index1];
+			if (self) {
+				getSelfIntersection(v1, curve1, locations, include);
+			}
+			var collisions1 = boundsCollisions[index1];
+			if (collisions1) {
+				for (var j = 0; j < collisions1.length; j++) {
+					if (_returnFirst && locations.length)
+						return locations;
+					var index2 = collisions1[j];
+					if (!self || index2 > index1) {
+						var curve2 = curves2[index2],
+							v2 = values2[index2];
+						getCurveIntersections(
+								v1, v2, curve1, curve2, locations, include);
+					}
+				}
+			}
 		}
 		return locations;
 	}
@@ -7486,10 +7704,13 @@ var CurveLocation = Base.extend({
 		this._intersection = this._next = this._previous = null;
 	},
 
-	_setCurve: function(curve) {
-		var path = curve._path;
+	_setPath: function(path) {
 		this._path = path;
 		this._version = path ? path._version : 0;
+	},
+
+	_setCurve: function(curve) {
+		this._setPath(curve._path);
 		this._curve = curve;
 		this._segment = null;
 		this._segment1 = curve._segment1;
@@ -7497,7 +7718,14 @@ var CurveLocation = Base.extend({
 	},
 
 	_setSegment: function(segment) {
-		this._setCurve(segment.getCurve());
+		var curve = segment.getCurve();
+		if (curve) {
+			this._setCurve(curve);
+		} else {
+			this._setPath(segment._path);
+			this._segment1 = segment;
+			this._segment2 = null;
+		}
 		this._segment = segment;
 		this._time = segment === this._segment1 ? 0 : 1;
 		this._point = segment._point.clone();
@@ -7703,7 +7931,7 @@ var CurveLocation = Base.extend({
 				offset = Curve.getLength(v,
 					end && count ? roots[count - 1] : 0,
 					!end && count ? roots[0] : 1);
-			offsets.push(count ? offset : offset / 64);
+			offsets.push(count ? offset : offset / 32);
 		}
 
 		function isInRange(angle, min, max) {
@@ -8062,16 +8290,20 @@ var PathItem = Item.extend({
 				matched = [],
 				count = 0;
 			ok = true;
+			var boundsOverlaps = CollisionDetection.findItemBoundsCollisions(paths1, paths2, Numerical.GEOMETRIC_EPSILON);
 			for (var i1 = length1 - 1; i1 >= 0 && ok; i1--) {
 				var path1 = paths1[i1];
 				ok = false;
-				for (var i2 = length2 - 1; i2 >= 0 && !ok; i2--) {
-					if (path1.compare(paths2[i2])) {
-						if (!matched[i2]) {
-							matched[i2] = true;
-							count++;
+				var pathBoundsOverlaps = boundsOverlaps[i1];
+				if (pathBoundsOverlaps) {
+					for (var i2 = pathBoundsOverlaps.length - 1; i2 >= 0 && !ok; i2--) {
+						if (path1.compare(paths2[pathBoundsOverlaps[i2]])) {
+							if (!matched[pathBoundsOverlaps[i2]]) {
+								matched[pathBoundsOverlaps[i2]] = true;
+								count++;
+							}
+							ok = true;
 						}
-						ok = true;
 					}
 				}
 			}
@@ -8093,13 +8325,14 @@ var Path = PathItem.extend({
 		this._closed = false;
 		this._segments = [];
 		this._version = 0;
-		var segments = Array.isArray(arg)
+		var args = arguments,
+			segments = Array.isArray(arg)
 			? typeof arg[0] === 'object'
 				? arg
-				: arguments
+				: args
 			: arg && (arg.size === undefined && (arg.x !== undefined
 					|| arg.point !== undefined))
-				? arguments
+				? args
 				: null;
 		if (segments && segments.length > 0) {
 			this.setSegments(segments);
@@ -8351,15 +8584,17 @@ var Path = PathItem.extend({
 	},
 
 	add: function(segment1 ) {
-		return arguments.length > 1 && typeof segment1 !== 'number'
-			? this._add(Segment.readList(arguments))
-			: this._add([ Segment.read(arguments) ])[0];
+		var args = arguments;
+		return args.length > 1 && typeof segment1 !== 'number'
+			? this._add(Segment.readList(args))
+			: this._add([ Segment.read(args) ])[0];
 	},
 
 	insert: function(index, segment1 ) {
-		return arguments.length > 2 && typeof segment1 !== 'number'
-			? this._add(Segment.readList(arguments, 1), index)
-			: this._add([ Segment.read(arguments, 1) ], index)[0];
+		var args = arguments;
+		return args.length > 2 && typeof segment1 !== 'number'
+			? this._add(Segment.readList(args, 1), index)
+			: this._add([ Segment.read(args, 1) ], index)[0];
 	},
 
 	addSegment: function() {
@@ -9233,7 +9468,6 @@ new function() {
 							length = flattener.length,
 							from = -style.getDashOffset(), to,
 							i = 0;
-						from = from % length;
 						while (from > 0) {
 							from -= getOffset(i--) + getOffset(i--);
 						}
@@ -9284,17 +9518,19 @@ new function() {
 		},
 
 		cubicCurveTo: function() {
-			var handle1 = Point.read(arguments),
-				handle2 = Point.read(arguments),
-				to = Point.read(arguments),
+			var args = arguments,
+				handle1 = Point.read(args),
+				handle2 = Point.read(args),
+				to = Point.read(args),
 				current = getCurrentSegment(this);
 			current.setHandleOut(handle1.subtract(current._point));
 			this._add([ new Segment(to, handle2.subtract(to)) ]);
 		},
 
 		quadraticCurveTo: function() {
-			var handle = Point.read(arguments),
-				to = Point.read(arguments),
+			var args = arguments,
+				handle = Point.read(args),
+				to = Point.read(args),
 				current = getCurrentSegment(this)._point;
 			this.cubicCurveTo(
 				handle.add(current.subtract(handle).multiply(1 / 3)),
@@ -9304,9 +9540,10 @@ new function() {
 		},
 
 		curveTo: function() {
-			var through = Point.read(arguments),
-				to = Point.read(arguments),
-				t = Base.pick(Base.read(arguments), 0.5),
+			var args = arguments,
+				through = Point.read(args),
+				to = Point.read(args),
+				t = Base.pick(Base.read(args), 0.5),
 				t1 = 1 - t,
 				current = getCurrentSegment(this)._point,
 				handle = through.subtract(current.multiply(t1 * t1))
@@ -9318,30 +9555,31 @@ new function() {
 		},
 
 		arcTo: function() {
-			var abs = Math.abs,
+			var args = arguments,
+				abs = Math.abs,
 				sqrt = Math.sqrt,
 				current = getCurrentSegment(this),
 				from = current._point,
-				to = Point.read(arguments),
+				to = Point.read(args),
 				through,
-				peek = Base.peek(arguments),
+				peek = Base.peek(args),
 				clockwise = Base.pick(peek, true),
 				center, extent, vector, matrix;
 			if (typeof clockwise === 'boolean') {
 				var middle = from.add(to).divide(2),
 				through = middle.add(middle.subtract(from).rotate(
 						clockwise ? -90 : 90));
-			} else if (Base.remain(arguments) <= 2) {
+			} else if (Base.remain(args) <= 2) {
 				through = to;
-				to = Point.read(arguments);
+				to = Point.read(args);
 			} else if (!from.equals(to)) {
-				var radius = Size.read(arguments),
+				var radius = Size.read(args),
 					isZero = Numerical.isZero;
 				if (isZero(radius.width) || isZero(radius.height))
 					return this.lineTo(to);
-				var rotation = Base.read(arguments),
-					clockwise = !!Base.read(arguments),
-					large = !!Base.read(arguments),
+				var rotation = Base.read(args),
+					clockwise = !!Base.read(args),
+					large = !!Base.read(args),
 					middle = from.add(to).divide(2),
 					pt = from.subtract(middle).rotate(-rotation),
 					x = pt.x,
@@ -9445,37 +9683,41 @@ new function() {
 		},
 
 		curveBy: function() {
-			var through = Point.read(arguments),
-				to = Point.read(arguments),
-				parameter = Base.read(arguments),
+			var args = arguments,
+				through = Point.read(args),
+				to = Point.read(args),
+				parameter = Base.read(args),
 				current = getCurrentSegment(this)._point;
 			this.curveTo(current.add(through), current.add(to), parameter);
 		},
 
 		cubicCurveBy: function() {
-			var handle1 = Point.read(arguments),
-				handle2 = Point.read(arguments),
-				to = Point.read(arguments),
+			var args = arguments,
+				handle1 = Point.read(args),
+				handle2 = Point.read(args),
+				to = Point.read(args),
 				current = getCurrentSegment(this)._point;
 			this.cubicCurveTo(current.add(handle1), current.add(handle2),
 					current.add(to));
 		},
 
 		quadraticCurveBy: function() {
-			var handle = Point.read(arguments),
-				to = Point.read(arguments),
+			var args = arguments,
+				handle = Point.read(args),
+				to = Point.read(args),
 				current = getCurrentSegment(this)._point;
 			this.quadraticCurveTo(current.add(handle), current.add(to));
 		},
 
 		arcBy: function() {
-			var current = getCurrentSegment(this)._point,
-				point = current.add(Point.read(arguments)),
-				clockwise = Base.pick(Base.peek(arguments), true);
+			var args = arguments,
+				current = getCurrentSegment(this)._point,
+				point = current.add(Point.read(args)),
+				clockwise = Base.pick(Base.peek(args), true);
 			if (typeof clockwise === 'boolean') {
 				this.arcTo(point, clockwise);
 			} else {
-				this.arcTo(point, current.add(Point.read(arguments)));
+				this.arcTo(point, current.add(Point.read(args)));
 			}
 		},
 
@@ -9573,13 +9815,16 @@ statics: {
 		}
 
 		var length = segments.length - (closed ? 0 : 1);
-		for (var i = 1; i < length; i++)
-			addJoin(segments[i], join);
-		if (closed) {
-			addJoin(segments[0], join);
-		} else if (length > 0) {
-			addCap(segments[0], cap);
-			addCap(segments[segments.length - 1], cap);
+		if (length > 0) {
+			for (var i = 1; i < length; i++) {
+				addJoin(segments[i], join);
+			}
+			if (closed) {
+				addJoin(segments[0], join);
+			} else {
+				addCap(segments[0], cap);
+				addCap(segments[segments.length - 1], cap);
+			}
 		}
 		return bounds;
 	},
@@ -9726,21 +9971,24 @@ Path.inject({ statics: new function() {
 
 	return {
 		Line: function() {
+			var args = arguments;
 			return createPath([
-				new Segment(Point.readNamed(arguments, 'from')),
-				new Segment(Point.readNamed(arguments, 'to'))
-			], false, arguments);
+				new Segment(Point.readNamed(args, 'from')),
+				new Segment(Point.readNamed(args, 'to'))
+			], false, args);
 		},
 
 		Circle: function() {
-			var center = Point.readNamed(arguments, 'center'),
-				radius = Base.readNamed(arguments, 'radius');
-			return createEllipse(center, new Size(radius), arguments);
+			var args = arguments,
+				center = Point.readNamed(args, 'center'),
+				radius = Base.readNamed(args, 'radius');
+			return createEllipse(center, new Size(radius), args);
 		},
 
 		Rectangle: function() {
-			var rect = Rectangle.readNamed(arguments, 'rectangle'),
-				radius = Size.readNamed(arguments, 'radius', 0,
+			var args = arguments,
+				rect = Rectangle.readNamed(args, 'rectangle'),
+				radius = Size.readNamed(args, 'radius', 0,
 						{ readNull: true }),
 				bl = rect.getBottomLeft(true),
 				tl = rect.getTopLeft(true),
@@ -9771,23 +10019,25 @@ Path.inject({ statics: new function() {
 					new Segment(br.subtract(rx, 0), [hx, 0])
 				];
 			}
-			return createPath(segments, true, arguments);
+			return createPath(segments, true, args);
 		},
 
 		RoundRectangle: '#Rectangle',
 
 		Ellipse: function() {
-			var ellipse = Shape._readEllipse(arguments);
-			return createEllipse(ellipse.center, ellipse.radius, arguments);
+			var args = arguments,
+				ellipse = Shape._readEllipse(args);
+			return createEllipse(ellipse.center, ellipse.radius, args);
 		},
 
 		Oval: '#Ellipse',
 
 		Arc: function() {
-			var from = Point.readNamed(arguments, 'from'),
-				through = Point.readNamed(arguments, 'through'),
-				to = Point.readNamed(arguments, 'to'),
-				props = Base.getNamed(arguments),
+			var args = arguments,
+				from = Point.readNamed(args, 'from'),
+				through = Point.readNamed(args, 'through'),
+				to = Point.readNamed(args, 'to'),
+				props = Base.getNamed(args),
 				path = new Path(props && props.insert == false
 						&& Item.NO_INSERT);
 			path.moveTo(from);
@@ -9796,9 +10046,10 @@ Path.inject({ statics: new function() {
 		},
 
 		RegularPolygon: function() {
-			var center = Point.readNamed(arguments, 'center'),
-				sides = Base.readNamed(arguments, 'sides'),
-				radius = Base.readNamed(arguments, 'radius'),
+			var args = arguments,
+				center = Point.readNamed(args, 'center'),
+				sides = Base.readNamed(args, 'sides'),
+				radius = Base.readNamed(args, 'radius'),
 				step = 360 / sides,
 				three = sides % 3 === 0,
 				vector = new Point(0, three ? -radius : radius),
@@ -9807,21 +10058,22 @@ Path.inject({ statics: new function() {
 			for (var i = 0; i < sides; i++)
 				segments[i] = new Segment(center.add(
 					vector.rotate((i + offset) * step)));
-			return createPath(segments, true, arguments);
+			return createPath(segments, true, args);
 		},
 
 		Star: function() {
-			var center = Point.readNamed(arguments, 'center'),
-				points = Base.readNamed(arguments, 'points') * 2,
-				radius1 = Base.readNamed(arguments, 'radius1'),
-				radius2 = Base.readNamed(arguments, 'radius2'),
+			var args = arguments,
+				center = Point.readNamed(args, 'center'),
+				points = Base.readNamed(args, 'points') * 2,
+				radius1 = Base.readNamed(args, 'radius1'),
+				radius2 = Base.readNamed(args, 'radius2'),
 				step = 360 / points,
 				vector = new Point(0, -1),
 				segments = new Array(points);
 			for (var i = 0; i < points; i++)
 				segments[i] = new Segment(center.add(vector.rotate(step * i)
 						.multiply(i % 2 ? radius2 : radius1)));
-			return createPath(segments, true, arguments);
+			return createPath(segments, true, args);
 		}
 	};
 }});
@@ -10116,7 +10368,7 @@ PathItem.inject(new function() {
 			curves = [],
 			paths;
 
-		function collect(paths) {
+		function collectPaths(paths) {
 			for (var i = 0, l = paths.length; i < l; i++) {
 				var path = paths[i];
 				Base.push(segments, path._segments);
@@ -10125,19 +10377,46 @@ PathItem.inject(new function() {
 			}
 		}
 
+		function getCurves(indices) {
+			var list = [];
+			for (var i = 0, l = indices && indices.length; i < l; i++) {
+				list.push(curves[indices[i]]);
+			}
+			return list;
+		}
+
 		if (crossings.length) {
-			collect(paths1);
+			collectPaths(paths1);
 			if (paths2)
-				collect(paths2);
+				collectPaths(paths2);
+
+			var curvesValues = new Array(curves.length);
+			for (var i = 0, l = curves.length; i < l; i++) {
+				curvesValues[i] = curves[i].getValues();
+			}
+			var curveCollisions = CollisionDetection.findCurveBoundsCollisions(
+					curvesValues, curvesValues, 0, true);
+			var curveCollisionsMap = {};
+			for (var i = 0; i < curves.length; i++) {
+				var curve = curves[i],
+					id = curve._path._id,
+					map = curveCollisionsMap[id] = curveCollisionsMap[id] || {};
+				map[curve.getIndex()] = {
+					hor: getCurves(curveCollisions[i].hor),
+					ver: getCurves(curveCollisions[i].ver)
+				};
+			}
+
 			for (var i = 0, l = crossings.length; i < l; i++) {
-				propagateWinding(crossings[i]._segment, _path1, _path2, curves,
-						operator);
+				propagateWinding(crossings[i]._segment, _path1, _path2,
+						curveCollisionsMap, operator);
 			}
 			for (var i = 0, l = segments.length; i < l; i++) {
 				var segment = segments[i],
 					inter = segment._intersection;
 				if (!segment._winding) {
-					propagateWinding(segment, _path1, _path2, curves, operator);
+					propagateWinding(segment, _path1, _path2,
+							curveCollisionsMap, operator);
 				}
 				if (!(inter && inter._overlap))
 					segment._path._overlapsOnly = false;
@@ -10150,7 +10429,6 @@ PathItem.inject(new function() {
 						return !!operator[w];
 					});
 		}
-
 		return createResult(paths, true, path1, path2, options);
 	}
 
@@ -10220,22 +10498,30 @@ PathItem.inject(new function() {
 					return abs(b.getArea()) - abs(a.getArea());
 				}),
 				first = sorted[0];
+			var collisions = CollisionDetection.findItemBoundsCollisions(sorted,
+					null, Numerical.GEOMETRIC_EPSILON);
 			if (clockwise == null)
 				clockwise = first.isClockwise();
 			for (var i = 0; i < length; i++) {
 				var path1 = sorted[i],
 					entry1 = lookup[path1._id],
-					point = path1.getInteriorPoint(),
-					containerWinding = 0;
-				for (var j = i - 1; j >= 0; j--) {
-					var path2 = sorted[j];
-					if (path2.contains(point)) {
-						var entry2 = lookup[path2._id];
-						containerWinding = entry2.winding;
-						entry1.winding += containerWinding;
-						entry1.container = entry2.exclude ? entry2.container
-								: path2;
-						break;
+					containerWinding = 0,
+					indices = collisions[i];
+				if (indices) {
+					var point = null;
+					for (var j = indices.length - 1; j >= 0; j--) {
+						if (indices[j] < i) {
+							point = point || path1.getInteriorPoint();
+							var path2 = sorted[indices[j]];
+							if (path2.contains(point)) {
+								var entry2 = lookup[path2._id];
+								containerWinding = entry2.winding;
+								entry1.winding += containerWinding;
+								entry1.container = entry2.exclude
+									? entry2.container : path2;
+								break;
+							}
+						}
 					}
 				}
 				if (isInside(entry1.winding) === isInside(containerWinding)) {
@@ -10243,8 +10529,8 @@ PathItem.inject(new function() {
 					paths[entry1.index] = null;
 				} else {
 					var container = entry1.container;
-					path1.setClockwise(container ? !container.isClockwise()
-							: clockwise);
+					path1.setClockwise(
+							container ? !container.isClockwise() : clockwise);
 				}
 			}
 		}
@@ -10332,6 +10618,9 @@ PathItem.inject(new function() {
 	}
 
 	function getWinding(point, curves, dir, closed, dontFlip) {
+		var curvesList = Array.isArray(curves)
+			? curves
+			: curves[dir ? 'hor' : 'ver'];
 		var ia = dir ? 1 : 0,
 			io = ia ^ 1,
 			pv = [point.x, point.y],
@@ -10436,12 +10725,12 @@ PathItem.inject(new function() {
 			}
 		}
 
-		for (var i = 0, l = curves.length; i < l; i++) {
-			var curve = curves[i],
+		for (var i = 0, l = curvesList.length; i < l; i++) {
+			var curve = curvesList[i],
 				path = curve._path,
 				v = curve.getValues(),
 				res;
-			if (!i || curves[i - 1]._path !== path) {
+			if (!i || curvesList[i - 1]._path !== path) {
 				vPrev = null;
 				if (!path._closed) {
 					vClose = Curve.getValues(
@@ -10470,7 +10759,7 @@ PathItem.inject(new function() {
 			if (res = handleCurve(v))
 				return res;
 
-			if (i + 1 === l || curves[i + 1]._path !== path) {
+			if (i + 1 === l || curvesList[i + 1]._path !== path) {
 				if (vClose && (res = handleCurve(vClose)))
 					return res;
 				if (onPath && !pathWindingL && !pathWindingR) {
@@ -10498,7 +10787,8 @@ PathItem.inject(new function() {
 		};
 	}
 
-	function propagateWinding(segment, path1, path2, curves, operator) {
+	function propagateWinding(segment, path1, path2, curveCollisionsMap,
+			operator) {
 		var chain = [],
 			start = segment,
 			totalLength = 0,
@@ -10531,9 +10821,8 @@ PathItem.inject(new function() {
 						dir = abs(curve.getTangentAtTime(t).y) < Math.SQRT1_2;
 					var wind = null;
 					if (operator.subtract && path2) {
-						var pathWinding = operand === path1
-										  ? path2._getWinding(pt, dir, true)
-										  : path1._getWinding(pt, dir, true);
+						var otherPath = operand === path1 ? path2 : path1,
+							pathWinding = otherPath._getWinding(pt, dir, true);
 						if (operand === path1 && pathWinding.winding ||
 							operand === path2 && !pathWinding.winding) {
 							if (pathWinding.quality < 1) {
@@ -10543,7 +10832,9 @@ PathItem.inject(new function() {
 							}
 						}
 					}
-					wind = wind || getWinding(pt, curves, dir, true);
+					wind =  wind || getWinding(
+							pt, curveCollisionsMap[path._id][curve.getIndex()],
+							dir, true);
 					if (wind.quality > winding.quality)
 						winding = wind;
 					break;
@@ -10615,8 +10906,8 @@ PathItem.inject(new function() {
 
 			if (inter) {
 				collect(inter);
-				while (inter && inter._prev)
-					inter = inter._prev;
+				while (inter && inter._previous)
+					inter = inter._previous;
 				collect(inter, start);
 			}
 			return crossings;
@@ -11371,7 +11662,7 @@ var Color = Base.extend(new function() {
 						value /= 100;
 					}
 				} else if (i < 3) {
-					value /= 255;
+					value /= /%$/.test(component) ? 100 : 255;
 				}
 				components[i] = value;
 			}
@@ -12508,7 +12799,7 @@ var View = Base.extend(Emitter, {
 		if (window && element) {
 			this._id = element.getAttribute('id');
 			if (this._id == null)
-				element.setAttribute('id', this._id = 'view-' + View._id++);
+				element.setAttribute('id', this._id = 'paper-view-' + View._id++);
 			DomEvent.add(element, this._viewEvents);
 			var none = 'none';
 			DomElement.setPrefixed(element.style, {
@@ -12780,8 +13071,9 @@ var View = Base.extend(Emitter, {
 }, Base.each(['rotate', 'scale', 'shear', 'skew'], function(key) {
 	var rotate = key === 'rotate';
 	this[key] = function() {
-		var value = (rotate ? Base : Point).read(arguments),
-			center = Point.read(arguments, 0, { readNull: true });
+		var args = arguments,
+			value = (rotate ? Base : Point).read(args),
+			center = Point.read(args, 0, { readNull: true });
 		return this.transform(new Matrix()[key](value,
 				center || this.getCenter(true)));
 	};
@@ -12844,7 +13136,7 @@ var View = Base.extend(Emitter, {
 
 	setMatrix: function() {
 		var matrix = this._matrix;
-		matrix.initialize.apply(matrix, arguments);
+		matrix.set.apply(matrix, arguments);
 	},
 
 	transform: function(matrix) {
@@ -13175,9 +13467,7 @@ new function() {
 				event.preventDefault();
 			}
 		},
-		isDragging: function() {
-			return dragging;
-		},
+
 		_handleKeyEvent: function(type, event, key, character) {
 			var scope = this._scope,
 				tool = scope.tool,
@@ -13633,7 +13923,7 @@ var Tool = PaperScopeItem.extend({
 	_reference: 'tool',
 	_events: ['onMouseDown', 'onMouseUp', 'onMouseDrag', 'onMouseMove',
 			'onActivate', 'onDeactivate', 'onEditOptions', 'onKeyDown',
-			'onKeyUp','onFrame'],
+			'onKeyUp'],
 
 	initialize: function Tool(props) {
 		PaperScopeItem.call(this);
@@ -13846,7 +14136,7 @@ var Tween = Base.extend(Emitter, {
 
 	update: function(progress) {
 		if (this.running) {
-			if (progress > 1) {
+			if (progress >= 1) {
 				progress = 1;
 				this.running = false;
 			}
@@ -13868,14 +14158,14 @@ var Tween = Base.extend(Emitter, {
 				this._setProperty(this._parsedKeys[key], value);
 			}
 
-			if (!this.running && this._then) {
-				this._then(this.object);
-			}
 			if (this.responds('update')) {
 				this.emit('update', new Base({
 					progress: progress,
 					factor: factor
 				}));
+			}
+			if (!this.running && this._then) {
+				this._then(this.object);
 			}
 		}
 		return this;
@@ -14006,7 +14296,7 @@ var Http = {
 	}
 };
 
-var CanvasProvider = {
+var CanvasProvider = Base.exports.CanvasProvider = {
 	canvases: [],
 
 	getCanvas: function(width, height) {
@@ -15274,8 +15564,12 @@ new function() {
 
 		function onLoad(svg) {
 			try {
-				var node = typeof svg === 'object' ? svg : new self.DOMParser()
-						.parseFromString(svg, 'image/svg+xml');
+				var node = typeof svg === 'object'
+					? svg
+					: new self.DOMParser().parseFromString(
+						svg.trim(),
+						'image/svg+xml'
+					);
 				if (!node.nodeName) {
 					node = null;
 					throw new Error('Unsupported SVG source: ' + source);
@@ -15302,7 +15596,7 @@ new function() {
 			}
 		}
 
-		if (typeof source === 'string' && !/^.*</.test(source)) {
+		if (typeof source === 'string' && !/^[\s\S]*</.test(source)) {
 			var node = document.getElementById(source);
 			if (node) {
 				onLoad(node);
@@ -16769,41 +17063,8 @@ Base.exports.PaperScript = function() {
 			code = code.substring(0, start) + str + code.substring(end);
 		}
 
-		var UPPER_CASE_NAME = new RegExp(/^[A-Z]+(?:_[A-Z0-9]+)*$/)
-		function walkAST(node, parent) {
-			if (!node)
-				return;
-			for (var key in node) {
-				if (key === 'range' || key === 'loc')
-					continue;
-				var value = node[key];
-				if (Array.isArray(value)) {
-					for (var i = 0, l = value.length; i < l; i++)
-						walkAST(value[i], node);
-				} else if (value && typeof value === 'object') {
-					walkAST(value, node);
-				}
-			}
+		function handleOverloading(node, parent) {
 			switch (node.type) {
-				case 'Identifier':
-					var name = node.name
-					if (UPPER_CASE_NAME.test(name)) {
-						if (parent)
-							if (parent.type === 'AssignmentExpression' && parent.right.type === 'Literal') {
-								if (options.props && options.props[name]) {
-									var new_value = options.props[name]
-
-									replaceCode(parent, node.name + '="' + new_value + '"')
-								}
-							} else if (parent.type === 'VariableDeclarator') {
-								if (options.props && options.props[name]) {
-									var new_value = options.props[name]
-									replaceCode(parent, node.name + '=' + new_value )
-								}
-							}
-					}
-					break
-
 			case 'UnaryExpression':
 				if (node.operator in unaryOperators
 						&& node.argument.type !== 'Literal') {
@@ -16864,6 +17125,11 @@ Base.exports.PaperScript = function() {
 					}
 				}
 				break;
+			}
+		}
+
+		function handleExports(node) {
+			switch (node.type) {
 			case 'ExportDefaultDeclaration':
 				replaceCode({
 					range: [node.start, node.declaration.start]
@@ -16898,6 +17164,29 @@ Base.exports.PaperScript = function() {
 			}
 		}
 
+		function walkAST(node, parent, paperFeatures) {
+			if (node) {
+				for (var key in node) {
+					if (key !== 'range' && key !== 'loc') {
+						var value = node[key];
+						if (Array.isArray(value)) {
+							for (var i = 0, l = value.length; i < l; i++) {
+								walkAST(value[i], node, paperFeatures);
+							}
+						} else if (value && typeof value === 'object') {
+							walkAST(value, node, paperFeatures);
+						}
+					}
+				}
+				if (paperFeatures.operatorOverloading !== false) {
+					handleOverloading(node, parent);
+				}
+				if (paperFeatures.moduleExports !== false) {
+					handleExports(node);
+				}
+			}
+		}
+
 		function encodeVLQ(value) {
 			var res = '',
 				base64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
@@ -16913,13 +17202,14 @@ Base.exports.PaperScript = function() {
 		}
 
 		var url = options.url || '',
+			sourceMaps = options.sourceMaps,
+			paperFeatures = options.paperFeatures || {},
+			source = options.source || code,
+			offset = options.offset || 0,
 			agent = paper.agent,
 			version = agent.versionNumber,
 			offsetCode = false,
-			sourceMaps = options.sourceMaps,
-			source = options.source || code,
 			lineBreaks = /\r\n|\n|\r/mg,
-			offset = options.offset || 0,
 			map;
 		if (sourceMaps && (agent.chrome && version >= 30
 				|| agent.webkit && version >= 537.76
@@ -16950,11 +17240,16 @@ Base.exports.PaperScript = function() {
 				sourcesContent: [source]
 			};
 		}
-		walkAST(parse(code, {
-			ranges: true,
-			preserveParens: true,
-			sourceType: 'module'
-		}));
+		if (
+			paperFeatures.operatorOverloading !== false ||
+			paperFeatures.moduleExports !== false
+		) {
+			walkAST(parse(code, {
+				ranges: true,
+				preserveParens: true,
+				sourceType: 'module'
+			}), null, paperFeatures);
+		}
 		if (map) {
 			if (offsetCode) {
 				code = new Array(offset + 1).join('\n') + code;
@@ -16996,18 +17291,10 @@ Base.exports.PaperScript = function() {
 				}
 			}
 		}
-		if (options && options.customApp) {
-			scope.customApp=true
-		}
 		expose({ __$__: __$__, $__: $__, paper: scope, tool: tool },
 				true);
 		expose(scope);
 		code = 'var module = { exports: {} }; ' + code;
-
-		if (options && options.customApp) {
-			handlers = []
-			expose ({document:{}, window:{}})
-		}
 		var exports = Base.each(handlers, function(key) {
 			if (new RegExp('\\s+' + key + '\\b').test(code)) {
 				params.push(key);

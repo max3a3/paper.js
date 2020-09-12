@@ -2,8 +2,8 @@
  * Paper.js - The Swiss Army Knife of Vector Graphics Scripting.
  * http://paperjs.org/
  *
- * Copyright (c) 2011 - 2019, Juerg Lehni & Jonathan Puckey
- * http://scratchdisk.com/ & https://puckey.studio/
+ * Copyright (c) 2011 - 2020, Jürg Lehni & Jonathan Puckey
+ * http://juerglehni.com/ & https://puckey.studio/
  *
  * Distributed under the MIT license. See LICENSE file for details.
  *
@@ -156,6 +156,17 @@ test('Import SVG switch', function(assert) {
             done();
         }
     });
+});
+
+test('Import SVG string with leading line-breaks', function() {
+    var svg = '\n<?xml version="1.0" encoding="utf-8"?>\n<!-- Some Comment  -->\n<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">\n  <rect fill="red" width="100" height="100"/>\n</svg>\n'
+    var imported = paper.project.importSVG(svg);
+    equals(function() { return imported !== null }, true);
+    equals(imported.children.length, 1);
+    equals(imported.firstChild, new Shape.Rectangle({
+        size: [100, 100],
+        fillColor: 'red'
+    }));
 });
 
 function importSVG(assert, url, message, options) {

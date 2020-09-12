@@ -2,8 +2,8 @@
  * Paper.js - The Swiss Army Knife of Vector Graphics Scripting.
  * http://paperjs.org/
  *
- * Copyright (c) 2011 - 2019, Juerg Lehni & Jonathan Puckey
- * http://scratchdisk.com/ & https://puckey.studio/
+ * Copyright (c) 2011 - 2020, Jürg Lehni & Jonathan Puckey
+ * http://juerglehni.com/ & https://puckey.studio/
  *
  * Distributed under the MIT license. See LICENSE file for details.
  *
@@ -188,51 +188,8 @@ Base.exports.PaperScript = function() {
             code = code.substring(0, start) + str + code.substring(end);
         }
 
-        var UPPER_CASE_NAME = new RegExp(/^[A-Z]+(?:_[A-Z0-9]+)*$/)
-        // Recursively walks the AST and replaces the code of certain nodes
-        function walkAST(node, parent) {
-            if (!node)
-                return;
-            // The easiest way to walk through the whole AST is to simply loop
-            // over each property of the node and filter out fields we don't
-            // need to consider...
-            for (var key in node) {
-                if (key === 'range' || key === 'loc')
-                    continue;
-                var value = node[key];
-                if (Array.isArray(value)) {
-                    for (var i = 0, l = value.length; i < l; i++)
-                        walkAST(value[i], node);
-                } else if (value && typeof value === 'object') {
-                    // We cannot use Base.isPlainObject() for these since
-                    // Acorn.js uses its own internal prototypes now.
-                    walkAST(value, node);
-                }
-            }
-            switch (node.type) {
-                case 'Identifier':  // splice literal declaration
-                    var name = node.name
-                    if (UPPER_CASE_NAME.test(name)) {
-                        if (parent)
-                            if (parent.type === 'AssignmentExpression' && parent.right.type === 'Literal') {
-                                // console.log(">> LiteralVariableDeclarator", name, parent.right.value)
-                                if (options.props && options.props[name]) {
-                                    var new_value = options.props[name]
-
-                                    replaceCode(parent, node.name + '="' + new_value + '"')
-                                    // console.log('   replaced', new_value)
-                                }
-                            } else if (parent.type === 'VariableDeclarator') {
-                                // console.log(">> VariableDeclarator", name, parent.init.value)
-                                if (options.props && options.props[name]) {
-                                    var new_value = options.props[name]
-                                    replaceCode(parent, node.name + '=' + new_value )
-                                    // console.log('   replaced', new_value)
-                                }
-                            }
-                    }
-                    break
-
+        function handleOverloading(node, parent) {
+			switch (node.type) {
             case 'UnaryExpression': // -a
                 if (node.operator in unaryOperators
                         && node.argument.type !== 'Literal') {
@@ -315,6 +272,11 @@ Base.exports.PaperScript = function() {
                     }
                 }
                 break;
+            }
+        }
+
+        function handleExports(node) {
+			switch (node.type) {
             case 'ExportDefaultDeclaration':
                 // Convert `export default` to `module.exports = ` statements:
                 replaceCode({
@@ -352,6 +314,35 @@ Base.exports.PaperScript = function() {
             }
         }
 
+        // Recursively walks the AST and replaces the code of certain nodes
+        function walkAST(node, parent, paperFeatures) {
+            if (node) {
+                // The easiest way to walk through the whole AST is to simply
+                // loop over each property of the node and filter out fields we
+                // don't need to consider...
+                for (var key in node) {
+                    if (key !== 'range' && key !== 'loc') {
+                        var value = node[key];
+                        if (Array.isArray(value)) {
+                            for (var i = 0, l = value.length; i < l; i++) {
+                                walkAST(value[i], node, paperFeatures);
+                            }
+                        } else if (value && typeof value === 'object') {
+                            // Don't use Base.isPlainObject() for these since
+                            // Acorn.js uses its own internal prototypes now.
+                            walkAST(value, node, paperFeatures);
+                        }
+                    }
+                }
+                if (paperFeatures.operatorOverloading !== false) {
+                    handleOverloading(node, parent);
+                }
+                if (paperFeatures.moduleExports !== false) {
+                    handleExports(node);
+                }
+            }
+        }
+
         // Source-map support:
         // Encodes a Variable Length Quantity as a Base64 string.
         // See: https://www.html5rocks.com/en/tutorials/developertools/sourcemaps/
@@ -370,15 +361,16 @@ Base.exports.PaperScript = function() {
         }
 
         var url = options.url || '',
-            agent = paper.agent,
-            version = agent.versionNumber,
-            offsetCode = false,
             sourceMaps = options.sourceMaps,
+            paperFeatures = options.paperFeatures || {},
             // Include the original code in the sourceMap if there is no linked
             // source file so the debugger can still display it correctly.
             source = options.source || code,
-            lineBreaks = /\r\n|\n|\r/mg,
             offset = options.offset || 0,
+            agent = paper.agent,
+            version = agent.versionNumber,
+            offsetCode = false,
+            lineBreaks = /\r\n|\n|\r/mg,
             map;
         // TODO: Verify these browser versions for source map support, and check
         // other browsers.
@@ -428,12 +420,17 @@ Base.exports.PaperScript = function() {
                 sourcesContent: [source]
             };
         }
-        // Now do the parsing magic
-        walkAST(parse(code, {
-            ranges: true,
-            preserveParens: true,
-            sourceType: 'module'
-        }));
+        if (
+            paperFeatures.operatorOverloading !== false ||
+            paperFeatures.moduleExports !== false
+        ) {
+            // Now do the parsing magic
+            walkAST(parse(code, {
+                ranges: true,
+                preserveParens: true,
+                sourceType: 'module'
+            }), null, paperFeatures);
+        }
         if (map) {
             if (offsetCode) {
                 // Adjust the line offset of the resulting code if required.
@@ -501,7 +498,6 @@ Base.exports.PaperScript = function() {
             func,
             compiled = typeof code === 'object' ? code : compile(code, options);
         code = compiled.code;
-        // if (options.customApp) console.log(code)
         function expose(scope, hidden) {
             // Look through all enumerable properties on the scope and expose
             // these too as pseudo-globals, but only if they seem to be in use.
@@ -516,19 +512,11 @@ Base.exports.PaperScript = function() {
                 }
             }
         }
-        if (options && options.customApp) {
-            scope.customApp=true // add paper.customApp flag
-        }
         expose({ __$__: __$__, $__: $__, paper: scope, tool: tool },
                 true);
         expose(scope);
         // Add a fake `module.exports` object so PaperScripts can export things.
         code = 'var module = { exports: {} }; ' + code;
-
-        if (options && options.customApp) {
-            handlers = [] // strip this
-            expose ({document:{}, window:{}}) // hide browser globals
-        }
         // Finally define the handler variable names as parameters and compose
         // the string describing the properties for the returned exports object
         // at the end of the code execution, so we can retrieve their values

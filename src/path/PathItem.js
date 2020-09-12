@@ -2,8 +2,8 @@
  * Paper.js - The Swiss Army Knife of Vector Graphics Scripting.
  * http://paperjs.org/
  *
- * Copyright (c) 2011 - 2019, Juerg Lehni & Jonathan Puckey
- * http://scratchdisk.com/ & https://puckey.studio/
+ * Copyright (c) 2011 - 2020, Jürg Lehni & Jonathan Puckey
+ * http://juerglehni.com/ & https://puckey.studio/
  *
  * Distributed under the MIT license. See LICENSE file for details.
  *
@@ -722,16 +722,20 @@ var PathItem = Item.extend(/** @lends PathItem# */{
                 matched = [],
                 count = 0;
             ok = true;
+            var boundsOverlaps = CollisionDetection.findItemBoundsCollisions(paths1, paths2, Numerical.GEOMETRIC_EPSILON);
             for (var i1 = length1 - 1; i1 >= 0 && ok; i1--) {
                 var path1 = paths1[i1];
                 ok = false;
-                for (var i2 = length2 - 1; i2 >= 0 && !ok; i2--) {
-                    if (path1.compare(paths2[i2])) {
-                        if (!matched[i2]) {
-                            matched[i2] = true;
-                            count++;
+                var pathBoundsOverlaps = boundsOverlaps[i1];
+                if (pathBoundsOverlaps) {
+                    for (var i2 = pathBoundsOverlaps.length - 1; i2 >= 0 && !ok; i2--) {
+                        if (path1.compare(paths2[pathBoundsOverlaps[i2]])) {
+                            if (!matched[pathBoundsOverlaps[i2]]) {
+                                matched[pathBoundsOverlaps[i2]] = true;
+                                count++;
+                            }
+                            ok = true;
                         }
-                        ok = true;
                     }
                 }
             }

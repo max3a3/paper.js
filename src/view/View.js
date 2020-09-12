@@ -2,8 +2,8 @@
  * Paper.js - The Swiss Army Knife of Vector Graphics Scripting.
  * http://paperjs.org/
  *
- * Copyright (c) 2011 - 2019, Juerg Lehni & Jonathan Puckey
- * http://scratchdisk.com/ & https://puckey.studio/
+ * Copyright (c) 2011 - 2020, Jürg Lehni & Jonathan Puckey
+ * http://juerglehni.com/ & https://puckey.studio/
  *
  * Distributed under the MIT license. See LICENSE file for details.
  *
@@ -45,7 +45,7 @@ var View = Base.extend(Emitter, /** @lends View# */{
             // Generate an id for this view / element if it does not have one
             this._id = element.getAttribute('id');
             if (this._id == null)
-                element.setAttribute('id', this._id = 'view-' + View._id++);
+                element.setAttribute('id', this._id = 'paper-view-' + View._id++);
             // Install event handlers
             DomEvent.add(element, this._viewEvents);
             // Borrowed from Hammer.js:
@@ -224,9 +224,9 @@ var View = Base.extend(Emitter, /** @lends View# */{
             var that = this;
             DomEvent.requestAnimationFrame(function() {
                 that._requested = false;
-                // Only handle frame and request next one if we don't need to
-                // stop, e.g.  due to a call to pause(), or a request for a
-                // single redraw.
+                // Only handle the frame and request the next one if we don't
+                // need to stop, e.g.  due to a call to pause(), or a request
+                // for a single redraw.
                 if (that._animate) {
                     // Request next update before handling the current frame
                     that.requestUpdate();
@@ -480,8 +480,9 @@ var View = Base.extend(Emitter, /** @lends View# */{
 }, Base.each(['rotate', 'scale', 'shear', 'skew'], function(key) {
     var rotate = key === 'rotate';
     this[key] = function(/* value, center */) {
-        var value = (rotate ? Base : Point).read(arguments),
-            center = Point.read(arguments, 0, { readNull: true });
+        var args = arguments,
+            value = (rotate ? Base : Point).read(args),
+            center = Point.read(args, 0, { readNull: true });
         return this.transform(new Matrix()[key](value,
                 center || this.getCenter(true)));
     };
@@ -591,7 +592,7 @@ var View = Base.extend(Emitter, /** @lends View# */{
         // NOTE: calling initialize() also calls #_changed() for us, through its
         // call to #set() / #reset(), and this also handles _applyMatrix for us.
         var matrix = this._matrix;
-        matrix.initialize.apply(matrix, arguments);
+        matrix.set.apply(matrix, arguments);
     },
 
     /**
@@ -632,7 +633,7 @@ var View = Base.extend(Emitter, /** @lends View# */{
      *
      * @name View#shear
      * @function
-     * @param {Point} shear the horziontal and vertical shear factors as a point
+     * @param {Point} shear the horizontal and vertical shear factors as a point
      * @param {Point} [center={@link View#center}]
      * @see Matrix#shear(shear[, center])
      */
@@ -654,7 +655,7 @@ var View = Base.extend(Emitter, /** @lends View# */{
      *
      * @name View#skew
      * @function
-     * @param {Point} skew the horziontal and vertical skew angles in degrees
+     * @param {Point} skew the horizontal and vertical skew angles in degrees
      * @param {Point} [center={@link View#center}]
      * @see Matrix#shear(skew[, center])
      */

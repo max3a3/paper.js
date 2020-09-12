@@ -2,8 +2,8 @@
  * Paper.js - The Swiss Army Knife of Vector Graphics Scripting.
  * http://paperjs.org/
  *
- * Copyright (c) 2011 - 2019, Juerg Lehni & Jonathan Puckey
- * http://scratchdisk.com/ & https://puckey.studio/
+ * Copyright (c) 2011 - 2020, Jürg Lehni & Jonathan Puckey
+ * http://juerglehni.com/ & https://puckey.studio/
  *
  * Distributed under the MIT license. See LICENSE file for details.
  *
@@ -18,7 +18,6 @@
  * @extends Item
  */
 var Raster = Item.extend(/** @lends Raster# */{
-}, /** @lends Raster# */{
     _class: 'Raster',
     _applyMatrix: false,
     _canApplyMatrix: false,
@@ -72,15 +71,6 @@ var Raster = Item.extend(/** @lends Raster# */{
      *
      * // Create the raster:
      * var raster = new Raster(imageElement);
-     *
-     * @example {@paperscript height=300}
-     * var raster = new Raster({
-     *     source: 'http://assets.paperjs.org/images/marilyn.jpg',
-     *     position: view.center
-     * });
-     *
-     * raster.scale(0.5);
-     * raster.rotate(10);
      */
     /**
      * Creates a new empty raster of the given size, and places it in the
@@ -107,6 +97,23 @@ var Raster = Item.extend(/** @lends Raster# */{
      *     }
      * }
      */
+    /**
+     * Creates a new raster from an object description, and places it in the
+     * active layer.
+     *
+     * @name Raster#initialize
+     * @param {Object} object an object containing properties to be set on the
+     *     raster
+     *
+     * @example {@paperscript height=300}
+     * var raster = new Raster({
+     *     source: 'http://assets.paperjs.org/images/marilyn.jpg',
+     *     position: view.center
+     * });
+     *
+     * raster.scale(0.5);
+     * raster.rotate(10);
+     */
     initialize: function Raster(source, position) {
         // Support three forms of item initialization:
         // - One object literal describing all the different properties.
@@ -114,7 +121,7 @@ var Raster = Item.extend(/** @lends Raster# */{
         // - A size (Size) describing the canvas that will be  created and an
         //   optional position (Point).
         // If _initialize can set properties through object literal, we're done.
-        // Otherwise we need to check the type of object:       var image,
+        // Otherwise we need to check the type of object:
         if (!this._initialize(source,
                 position !== undefined && Point.read(arguments))) {
             var image,
@@ -125,7 +132,7 @@ var Raster = Item.extend(/** @lends Raster# */{
                         ? source
                         : null;
             if (object && object !== Item.NO_INSERT) {
-                if (object.getContent || object.naturalHeight != null) {
+                if (object.getContext || object.naturalHeight != null) {
                     image = object;
                 } else if (object) {
                     // See if the arguments describe the raster size:
@@ -562,7 +569,7 @@ var Raster = Item.extend(/** @lends Raster# */{
     /**
      * Draws an image on the raster.
      *
-     * @param {HTMLImageElement|HTMLCanvasElement} image
+     * @param {CanvasImageSource} image
      * @param {Point} point the offset of the image as a point in pixel
      * coordinates
      */
@@ -697,8 +704,9 @@ var Raster = Item.extend(/** @lends Raster# */{
      * @param {Color} color the color that the pixel will be set to
      */
     setPixel: function(/* point, color */) {
-        var point = Point.read(arguments),
-            color = Color.read(arguments),
+        var args = arguments,
+            point = Point.read(args),
+            color = Color.read(args),
             components = color._convert('rgb'),
             alpha = color._alpha,
             ctx = this.getContext(true),
@@ -818,7 +826,7 @@ var Raster = Item.extend(/** @lends Raster# */{
         if (element && element.width > 0 && element.height > 0) {
             // Handle opacity for Rasters separately from the rest, since
             // Rasters never draw a stroke. See Item#draw().
-            ctx.globalAlpha = this._opacity;
+            ctx.globalAlpha = Numerical.clamp(this._opacity, 0, 1);
 
             // Call _setStyles() to make sure shadow is drawn (#1437).
             this._setStyles(ctx, param, viewMatrix);

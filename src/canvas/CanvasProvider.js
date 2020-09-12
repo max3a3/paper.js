@@ -2,8 +2,8 @@
  * Paper.js - The Swiss Army Knife of Vector Graphics Scripting.
  * http://paperjs.org/
  *
- * Copyright (c) 2011 - 2019, Juerg Lehni & Jonathan Puckey
- * http://scratchdisk.com/ & https://puckey.studio/
+ * Copyright (c) 2011 - 2020, Jürg Lehni & Jonathan Puckey
+ * http://juerglehni.com/ & https://puckey.studio/
  *
  * Distributed under the MIT license. See LICENSE file for details.
  *
@@ -12,7 +12,7 @@
 
 // TODO: Run through the canvas array to find a canvas with the requested
 // width / height, so we don't need to resize it?
-var CanvasProvider = {
+var CanvasProvider = Base.exports.CanvasProvider = {
     canvases: [],
 
     getCanvas: function(width, height) {

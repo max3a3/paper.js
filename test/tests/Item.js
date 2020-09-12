@@ -2,8 +2,8 @@
  * Paper.js - The Swiss Army Knife of Vector Graphics Scripting.
  * http://paperjs.org/
  *
- * Copyright (c) 2011 - 2019, Juerg Lehni & Jonathan Puckey
- * http://scratchdisk.com/ & https://puckey.studio/
+ * Copyright (c) 2011 - 2020, Jürg Lehni & Jonathan Puckey
+ * http://juerglehni.com/ & https://puckey.studio/
  *
  * Distributed under the MIT license. See LICENSE file for details.
  *
@@ -735,23 +735,54 @@ test('Item#blendMode in a transformed Group', function() {
         blendMode: 'screen'
     });
 
-    var raster = layer.rasterize(72);
+    var raster = layer.rasterize(72, false);
     equals(raster.getPixel(0, 0), new Color(1, 0, 0, 1),
-            'Top left pixel should be red:');
+            'Top left pixel should be red');
     equals(raster.getPixel(50, 50), new Color(1, 1, 0, 1),
-            'Middle center pixel should be yellow:');
+            'Middle center pixel should be yellow');
 
-    raster.remove();
     path2.position = [0, 0];
 
     var group = new Group(path2);
     group.position = [50, 50];
 
-    var raster = layer.rasterize(72);
+    var raster = layer.rasterize(72, false);
     equals(raster.getPixel(0, 0), new Color(1, 0, 0, 1),
-            'Top left pixel should be red:');
+            'Top left pixel should be red');
     equals(raster.getPixel(50, 50), new Color(1, 1, 0, 1),
-            'Middle center pixel should be yellow:');
+            'Middle center pixel should be yellow');
+});
+
+test('Item#opacity', function() {
+    var layer = new Layer();
+    var background = new Path.Rectangle({
+        size: [100, 100],
+        fillColor: 'white'
+    });
+
+    var circle = new Path.Circle({
+        radius: 25,
+        center: [50, 50],
+        fillColor: 'red'
+    });
+
+    const red = new Color(1, 0, 0, 1)
+    const white = new Color(1, 1, 1, 1)
+
+    equals(layer.rasterize(72, false).getPixel(50, 50), red,
+        'Center pixel should be red');
+    circle.opacity = 0;
+    equals(layer.rasterize(72, false).getPixel(50, 50), white,
+        'Center pixel should be white');
+    circle.opacity = -1;
+    equals(layer.rasterize(72, false).getPixel(50, 50), white,
+        'Center pixel should be white');
+    circle.opacity = 1;
+    equals(layer.rasterize(72, false).getPixel(50, 50), red,
+        'Center pixel should be red');
+    circle.opacity = 2;
+    equals(layer.rasterize(72, false).getPixel(50, 50), red,
+        'Center pixel should be red');
 });
 
 test('Item#applyMatrix', function() {
@@ -928,6 +959,52 @@ test('Item#scaling, #rotation', function() {
     shape2.scaling = [2, 1];
     equals(shape2.bounds, expected,
             'shape2.bounds, setting shape2.scaling before shape2.rotation');
+});
+
+test('Item#scaling = 0 (#1816)', function() {
+    const circle = new Path.Circle({
+        radius: 100,
+        center: [100, 100],
+        fillColor: 'red',
+        applyMatrix: false
+    })
+
+    circle.translate(100)
+    circle.scaling = 0
+    equals(circle.bounds, new Rectangle(200, 200, 0, 0),
+            'circle.bounds, with scaling = 0');
+
+    circle.scaling = 1
+    equals(circle.bounds, new Rectangle(100, 100, 200, 200),
+            'circle.bounds, with scaling = 1');
+
+    circle.scaling = [0, 1]
+    equals(circle.bounds, new Rectangle(200, 100, 0, 200),
+            'circle.bounds, with scaling = [0, 1]');
+
+    circle.scaling = 1
+    equals(circle.bounds, new Rectangle(100, 100, 200, 200),
+            'circle.bounds, with scaling = 1');
+
+    const rect = new Path.Rectangle({
+        center: [100, 100],
+        size: [200, 100],
+        fillColor: 'red',
+        applyMatrix: false
+    })
+
+    rect.translate(100)
+    rect.rotate(45)
+
+    rect.scaling = 0
+    equals(rect.bounds, new Rectangle(200, 200, 0, 0),
+            'rect.bounds, with scaling = 0');
+    equals(rect.rotation, 45);
+
+    rect.scaling = 1
+    equals(rect.bounds, new Rectangle(93.93398, 93.93398, 212.13203, 212.13203),
+            'rect.bounds, with scaling = 1');
+    equals(rect.rotation, 45);
 });
 
 test('Item#position pivot point and caching (#1503)', function() {

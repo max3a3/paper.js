@@ -2,8 +2,8 @@
  * Paper.js - The Swiss Army Knife of Vector Graphics Scripting.
  * http://paperjs.org/
  *
- * Copyright (c) 2011 - 2019, Juerg Lehni & Jonathan Puckey
- * http://scratchdisk.com/ & https://puckey.studio/
+ * Copyright (c) 2011 - 2020, Jürg Lehni & Jonathan Puckey
+ * http://juerglehni.com/ & https://puckey.studio/
  *
  * Distributed under the MIT license. See LICENSE file for details.
  *
@@ -102,7 +102,7 @@ var Color = Base.extend(new function() {
                     }
                 } else if (i < 3) {
                     // RGB color values to 0..1
-                    value /= 255;
+                    value /= /%$/.test(component) ? 100 : 255;
                 }
                 components[i] = value;
             }

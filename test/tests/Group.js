@@ -2,8 +2,8 @@
  * Paper.js - The Swiss Army Knife of Vector Graphics Scripting.
  * http://paperjs.org/
  *
- * Copyright (c) 2011 - 2019, Juerg Lehni & Jonathan Puckey
- * http://scratchdisk.com/ & https://puckey.studio/
+ * Copyright (c) 2011 - 2020, Jürg Lehni & Jonathan Puckey
+ * http://juerglehni.com/ & https://puckey.studio/
  *
  * Distributed under the MIT license. See LICENSE file for details.
  *
@@ -189,3 +189,38 @@ test(
         equals(group.internalBounds, expected);
     }
 );
+
+test('group.matrix with parent matrix applied (#1711)', function() {
+    var child = new Group({ applyMatrix: false });
+    var parent = new Group({ applyMatrix: true, children: [child] });
+    var scale = 1.1;
+    var initial = child.scaling.x;
+    parent.scale(scale);
+    equals(child.scaling.x, initial * scale);
+});
+
+test('Nested group.matrix.apply(true, true) with matrices not applied', function() {
+    var path = new Path({ applyMatrix: false });
+    var group = new Group({ applyMatrix: false, children: [path] });
+    var parent = new Group({ applyMatrix: false, children: [group] });
+    var grandParent = new Group({ applyMatrix: false, children: [parent] });
+    equals(function() {
+        return grandParent.applyMatrix;
+    }, false);
+    equals(function() {
+        return group.applyMatrix;
+    }, false);
+    equals(function() {
+        return path.applyMatrix;
+    }, false);
+    grandParent.matrix.apply(true, true);
+    equals(function() {
+        return grandParent.applyMatrix;
+    }, true);
+    equals(function() {
+        return group.applyMatrix;
+    }, true);
+    equals(function() {
+        return path.applyMatrix;
+    }, true);
+});
