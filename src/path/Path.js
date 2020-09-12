@@ -2319,7 +2319,14 @@ new function() { // Scope for drawing
                 // If the path is part of a compound path or doesn't have a fill
                 // or stroke, there is no need to continue.
                 this._setStyles(ctx, param, viewMatrix);
+
                 if (hasFill) {
+                    if (style.fillColor._type === 'pattern'){
+                        bounds = this._getBounds(null,{});
+
+                        ctx.translate(bounds.x, bounds.y); 	// Prevents pattern to appear moving when path is dragged
+                    }
+
                     ctx.fill(style.getFillRule());
                     // If shadowColor is defined, clear it after fill, so it
                     // won't be applied to both fill and stroke. If the path is

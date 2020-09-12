@@ -47,7 +47,8 @@ var Color = Base.extend(new function() {
         rgb: ['red', 'green', 'blue'],
         hsb: ['hue', 'saturation', 'brightness'],
         hsl: ['hue', 'saturation', 'lightness'],
-        gradient: ['gradient', 'origin', 'destination', 'highlight']
+        gradient: ['gradient', 'origin', 'destination', 'highlight'],
+        pattern: ['pattern', 'url', 'repeat', 'width', 'height']
     };
 
     // Parsers of values for setters, by type and property
@@ -250,6 +251,15 @@ var Color = Base.extend(new function() {
             // TODO: Implement
             return [];
         },
+        'pattern-rgb': function(/* pattern */) {
+            // TODO: Implement
+            return [];
+        },
+
+        'rgb-pattern': function(/* pattern */) {
+            // TODO: Implement
+            return [];
+        },
 
         'rgb-gradient': function(/* r, g, b */) {
             // TODO: Implement
@@ -266,6 +276,8 @@ var Color = Base.extend(new function() {
         // Keep track of parser functions per type.
         componentParsers[type] = [];
         Base.each(properties, function(name, index) {
+            console.log("installing parser",name)
+
             var part = Base.capitalize(name),
                 // Both hue and saturation have overlapping properties between
                 // hsb and hsl. Handle this here separately, by testing for
@@ -289,22 +301,30 @@ var Color = Base.extend(new function() {
                                     value._addOwner(this);
                             }
                             return value;
+                            }
+                            // all other (point) properties of gradient color:
+                            : function(/* value */) {
+                                return Point.read(arguments, 0, {
+                                        readNull: name === 'highlight',
+                                        clone: true
+                                });
+                            }
+
+
+                    : name === 'pattern'
+                        ? function(value) {
+                            value = new Pattern(value.url, value.repeat, value.width, value.height);
+                            value._addOwner(this);
+                            return value;
                         }
-                        // all other (point) properties of gradient color:
-                        : function(/* value */) {
-                            return Point.read(arguments, 0, {
-                                    readNull: name === 'highlight',
-                                    clone: true
-                            });
-                        }
-                    // Normal number component properties:
-                    : function(value) {
-                        // NOTE: We don't clamp values here, they're only
-                        // clamped once the actual CSS values are produced.
-                        // Gotta love the fact that isNaN(null) is false,
-                        // while isNaN(undefined) is true.
-                        return value == null || isNaN(value) ? 0 : +value;
-                    };
+                // Normal number component properties:
+                        : function(value) {
+                            // NOTE: We don't clamp values here, they're only
+                            // clamped once the actual CSS values are produced.
+                            // Gotta love the fact that isNaN(null) is false,
+                            // while isNaN(undefined) is true.
+                            return value == null || isNaN(value) ? 0 : +value;
+                        };
             this['get' + part] = function() {
                 return this._type === type
                     || hasOverlap && /^hs[bl]$/.test(this._type)
@@ -625,6 +645,9 @@ var Color = Base.extend(new function() {
                     } else if (arg.constructor === Gradient) {
                         type = 'gradient';
                         values = args;
+                    } else if (arg.constructor === Pattern) {
+                        type = 'pattern';
+                        values = args;
                     } else {
                         // Determine type by presence of object property names
                         type = 'hue' in arg
@@ -636,7 +659,9 @@ var Color = Base.extend(new function() {
                                 ? 'gradient'
                                 : 'gray' in arg
                                     ? 'gray'
-                                    : 'rgb';
+                                    : 'pattern' in arg
+                                        ? 'pattern'
+                                        :'rgb';
                         // Convert to array and parse in one loop, for efficiency
                         var properties = types[type],
                             parsers = componentParsers[type];
@@ -903,52 +928,92 @@ var Color = Base.extend(new function() {
             if (this._canvasStyle)
                 return this._canvasStyle;
             // Normal colors are simply represented by their CSS string.
-            if (this._type !== 'gradient')
+            if (this._type !== 'gradient' && this._type !== 'pattern')
                 return this._canvasStyle = this.toCSS();
-            // Gradient code form here onwards
-            var components = this._components,
-                gradient = components[0],
-                stops = gradient._stops,
-                origin = components[1],
-                destination = components[2],
-                highlight = components[3],
-                inverse = matrix && matrix.inverted(),
-                canvasGradient;
-            // If the item's content is transformed by a matrix, we need to
-            // inverse transform the gradient points, as they are defined in
-            // item's parent coordinate system.
-            if (inverse) {
-                origin = inverse._transformPoint(origin);
-                destination = inverse._transformPoint(destination);
-                if (highlight)
-                    highlight = inverse._transformPoint(highlight);
-            }
-            if (gradient._radial) {
-                var radius = destination.getDistance(origin);
-                if (highlight) {
-                    var vector = highlight.subtract(origin);
-                    if (vector.getLength() > radius)
-                        highlight = origin.add(vector.normalize(radius - 0.1));
+
+            else if (this._type === 'gradient') {
+
+                // Gradient code form here onwards
+                var components = this._components,
+                    gradient = components[0],
+                    stops = gradient._stops,
+                    origin = components[1],
+                    destination = components[2],
+                    highlight = components[3],
+                    inverse = matrix && matrix.inverted(),
+                    canvasGradient;
+                // If the item's content is transformed by a matrix, we need to
+                // inverse transform the gradient points, as they are defined in
+                // item's parent coordinate system.
+                if (inverse) {
+                    origin = inverse._transformPoint(origin);
+                    destination = inverse._transformPoint(destination);
+                    if (highlight)
+                        highlight = inverse._transformPoint(highlight);
                 }
-                var start = highlight || origin;
-                canvasGradient = ctx.createRadialGradient(start.x, start.y,
+                if (gradient._radial) {
+                    var radius = destination.getDistance(origin);
+                    if (highlight) {
+                        var vector = highlight.subtract(origin);
+                        if (vector.getLength() > radius)
+                            highlight = origin.add(vector.normalize(radius - 0.1));
+                    }
+                    var start = highlight || origin;
+                    canvasGradient = ctx.createRadialGradient(start.x, start.y,
                         0, origin.x, origin.y, radius);
-            } else {
-                canvasGradient = ctx.createLinearGradient(origin.x, origin.y,
+                } else {
+                    canvasGradient = ctx.createLinearGradient(origin.x, origin.y,
                         destination.x, destination.y);
-            }
-            for (var i = 0, l = stops.length; i < l; i++) {
-                var stop = stops[i],
-                    offset = stop._offset;
-                // Use the defined offset, and fall back to automatic linear
-                // calculation.
-                // NOTE: that if _offset is 0 for the first entry, the fall-back
-                // will be so too.
-                canvasGradient.addColorStop(
+                }
+                for (var i = 0, l = stops.length; i < l; i++) {
+                    var stop = stops[i],
+                        offset = stop._offset;
+                    // Use the defined offset, and fall back to automatic linear
+                    // calculation.
+                    // NOTE: that if _offset is 0 for the first entry, the fall-back
+                    // will be so too.
+                    canvasGradient.addColorStop(
                         offset == null ? i / (l - 1) : offset,
                         stop._color.toCanvasStyle());
+                }
+                return this._canvasStyle = canvasGradient;
             }
-            return this._canvasStyle = canvasGradient;
+            else { // pattern
+                var pattern = this._components[0],
+                    image;
+                /*#*/ if (!__options.node) {
+                            var that = this,
+                            image = new Image();
+
+                            // A new image created above? Set the source now.
+                            if (!image.src) {
+                                image.src = pattern._url;
+                                image.onload = function () {
+                                    that._owner._changed(/*#=*/Change.STYLE);
+
+                                }
+                            }
+
+                    /*#*/ } else if (__options.node) {
+                                image = new Image();
+                                if(pattern._width)
+                                    image.width = pattern._width
+                                if(pattern._height)
+                                    image.height = pattern._height
+                                // If we're running on the server and it's a string,
+                                // check if it is a data URL
+                                if (/^data:/.test(pattern._url)) {
+                                    image.src = pattern._url;
+                                } else {
+                                    var fs = require('fs');
+                                    image.src = fs.readFileSync(pattern._url);
+                                }
+                    /*#*/ } // options.node
+                if(image.complete)
+                    return this._canvasStyle = ctx.createPattern(image, pattern._repeat);
+
+                return null;
+            }
         },
 
         /**
