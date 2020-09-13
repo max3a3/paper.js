@@ -28,6 +28,69 @@ function move(object) {
     object.position = pos.add([5, 0])
 }
 
+function itemfill(style = 1) {
+    let ret
+
+    switch (style) {
+        case 1: {
+            var grp = new Group([new paper.Path.Circle({
+                fillColor: "red",
+                radius: 13
+            }), new paper.Path.Rectangle({fillColor: "green", size: [5, 10], position: [2, 18]})]);
+            // var grp = new paper.Path.Circle({fillColor: "red", radius: 3})
+            let pattern = new paper.ItemPattern(grp);
+
+
+            ret = new Path.Rectangle({
+                fillColor: pattern,
+                position: [60, 100],
+                size: [100, 100],
+                strokeColor: "green"
+            })
+            break;
+        }
+        case 2: {
+            let pattern = {itempattern: {item: new Path.Circle({fillColor: "green", radius: 5})}}
+            pattern.itempattern.item.remove() // somehow this is not removed for stroke maybe timing issue
+                                              // can be seen when first drawn, but subsequently it is fine,
+                                              // not in the scene graph
+
+
+
+            ret = new Path.Rectangle({
+                fillColor: {
+                    pattern:
+                        {
+                            url: 'http://www.w3schools.com/tags/img_lamp.jpg'
+                        }
+                },
+                position: [60, 100],
+                size: [100, 100],
+                strokeColor: pattern,
+                strokeWidth: 12,
+            })
+            break
+        }
+        case 3: {
+            let pattern = {itempattern: {item: new Path.Circle({fillColor: "green", radius: 13})}}
+            pattern.itempattern.item.remove() // somehow this is not removed maybe timing issue
+                                              // can be seen when first drawn, but subsequently it is fine,
+                                              // not in the scene graph
+
+
+            ret = new Path.Rectangle({
+                fillColor: 'red',//pattern,
+                position: [60, 100],
+                size: [100, 100],
+                strokeColor: pattern,//"red",
+                strokeWidth: 12,
+            })
+            break
+        }
+    }
+    return ret
+}
+
 function fillPaper(style = 1) {
     var circle = new paper.Path.Circle(new paper.Point(100, 170), 30);
     // circle.fillColor = 'red'
@@ -61,11 +124,16 @@ function fillPaper(style = 1) {
             }
             circle.position = [80, 30]
             break
+        case 3:
+            circle.fillColor = new Pattern('https://icons.iconarchive.com/icons/martz90/circle/32/camera-icon.png')
+
+            break
     }
 
 
     return circle
 }
+
 let offsetX = 5
 var mozimg = new Image();
 mozimg.src = 'https://mdn.mozillademos.org/files/222/Canvas_createpattern.png';
@@ -76,20 +144,21 @@ function app_init(paper) {
 
     $("#fillnative").click(() => {
         if (mozimg.complete) {
-            ctx.clearRect( 0, 0, canvas.width, canvas.height );
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             var pattern = ctx.createPattern(mozimg, 'repeat');
 
 
             // ctx.save();
-            ctx.translate(offsetX,0)
+            ctx.translate(offsetX, 0)
             ctx.fillStyle = pattern;
             ctx.fillRect(10, 10, 300, 300);
-            ctx.translate(-offsetX,0)
+            ctx.translate(-offsetX, 0)
             offsetX += 7
             // ctx.restore();
-            console.log("offset",offsetX)
+            console.log("offset", offsetX)
 
-        };
+        }
+        ;
 
     })
     $("#fillpaper1").click(() => {
@@ -97,6 +166,19 @@ function app_init(paper) {
     })
     $("#fillpaper2").click(() => {
         testObj = fillPaper(2)
+    })
+    $("#fillpaper3").click(() => {
+        testObj = fillPaper(3)
+    })
+
+    $("#itemfill").click(() => {
+        testObj = itemfill(1)
+    })
+    $("#itemfill2").click(() => {
+        testObj = itemfill(2)
+    })
+    $("#itemfill3").click(() => {
+        testObj = itemfill(3)
     })
 
     $("#move").click(() => {
@@ -176,5 +258,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // init_drawing(paper)
 
-    // testObj = fillPaper(paper)
+    // testObj = fillPaper(1)
+// testObj=    itemfill(1)
 })
