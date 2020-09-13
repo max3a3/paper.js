@@ -11,3 +11,15 @@ https://github.com/max3a3/paper.js/commit/d31565453d2dec3a38aba63445802b04f82b32
 
 fix upper case detection
 939691330e6c7d292f6724fd31d4607c1bf49940
+
+
+fix pathfitter don't overfit on closed path
+2a6cdf572c2a533c3f3292998947380b3e01f9ba
+
+pattern image  {pattern: }  this is older pattern patch from https://github.com/csk157/paper.js
+c749c28115f2a1956010c1d30bbecfce727ecfd0
+
+
+itempattern {itempattern: }  can use paper item as fill or raster
+504d7b3eec38cb457c5cf20a20e5b36fac0ae68f
+

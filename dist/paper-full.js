@@ -1,5 +1,5 @@
 /*!
- * Paper.js v0.12.11 - The Swiss Army Knife of Vector Graphics Scripting.
+ * Paper.js v0.12.11-wng_test - The Swiss Army Knife of Vector Graphics Scripting.
  * http://paperjs.org/
  *
  * Copyright (c) 2011 - 2020, Jürg Lehni & Jonathan Puckey
@@ -9,7 +9,7 @@
  *
  * All rights reserved.
  *
- * Date: Fri Jun 19 19:14:33 2020 +0200
+ * Date: Sat Sep 12 22:04:32 2020 -0700
  *
  ***
  *
@@ -821,7 +821,7 @@ var PaperScope = Base.extend({
 		}
 	},
 
-	version: "0.12.11",
+	version: "0.12.11-wng_test",
 
 	getView: function() {
 		var project = this.project;
@@ -4592,7 +4592,9 @@ new function() {
 		var children = this._children;
 		if (children) {
 			for (var i = 0, l = children.length; i < l; i++) {
-				children[i].transform(matrix, applyRecursively, setApplyMatrix);
+				let childrenApplyMatrix = children[i].applyMatrix
+				children[i].transform(matrix, childrenApplyMatrix, applyRecursively,
+					setApplyMatrix);
 			}
 			return true;
 		}
@@ -9455,8 +9457,18 @@ new function() {
 
 			if (!dontPaint && (hasFill || hasStroke)) {
 				this._setStyles(ctx, param, viewMatrix);
+				var bounds=null
 				if (hasFill) {
+					if (style.fillColor._type === 'pattern' || style.fillColor._type === 'itempattern'){
+						bounds = this._getBounds(null,{});
+
+						ctx.translate(bounds.x, bounds.y);
+					}
+
 					ctx.fill(style.getFillRule());
+					if (style.fillColor._type === 'pattern' || style.fillColor._type === 'itempattern'){
+						ctx.translate(-bounds.x, -bounds.y);
+					}
 					ctx.shadowColor = 'rgba(0,0,0,0)';
 				}
 				if (hasStroke) {
@@ -9478,6 +9490,12 @@ new function() {
 										Math.max(from, 0), Math.max(to, 0));
 							from = to + getOffset(i++);
 						}
+					}
+					if (style.strokeColor._type === 'pattern' || style.strokeColor._type === 'itempattern'){
+						if (!bounds)
+							bounds = this._getBounds(null,{});
+
+						ctx.translate(bounds.x, bounds.y);
 					}
 					ctx.stroke();
 				}
@@ -11306,10 +11324,7 @@ var PathFitter = Base.extend({
 				points.push(prev = point.clone());
 			}
 		}
-		if (closed) {
-			points.unshift(points[points.length - 1]);
-			points.push(points[1]);
-		}
+
 		this.closed = closed;
 	},
 
@@ -11618,7 +11633,9 @@ var Color = Base.extend(new function() {
 		rgb: ['red', 'green', 'blue'],
 		hsb: ['hue', 'saturation', 'brightness'],
 		hsl: ['hue', 'saturation', 'lightness'],
-		gradient: ['gradient', 'origin', 'destination', 'highlight']
+		gradient: ['gradient', 'origin', 'destination', 'highlight'],
+		pattern: ['pattern', 'url', 'repeat', 'width', 'height'],
+		itempattern: ['itempattern', 'item']
 	};
 
 	var componentParsers = {},
@@ -11785,6 +11802,13 @@ var Color = Base.extend(new function() {
 		'gradient-rgb': function() {
 			return [];
 		},
+		'pattern-rgb': function() {
+			return [];
+		},
+
+		'rgb-pattern': function() {
+			return [];
+		},
 
 		'rgb-gradient': function() {
 			return [];
@@ -11795,6 +11819,7 @@ var Color = Base.extend(new function() {
 	return Base.each(types, function(properties, type) {
 		componentParsers[type] = [];
 		Base.each(properties, function(name, index) {
+
 			var part = Base.capitalize(name),
 				hasOverlap = /^(hue|saturation)$/.test(name),
 				parser = componentParsers[type][index] = type === 'gradient'
@@ -11813,16 +11838,27 @@ var Color = Base.extend(new function() {
 									value._addOwner(this);
 							}
 							return value;
+							}
+							: function() {
+								return Point.read(arguments, 0, {
+										readNull: name === 'highlight',
+										clone: true
+								});
+							}
+
+					: name === 'pattern'
+						? function(value) {
+							value = new Pattern(value.url, value.repeat, value.width, value.height);
+							return value;
 						}
-						: function() {
-							return Point.read(arguments, 0, {
-									readNull: name === 'highlight',
-									clone: true
-							});
-						}
-					: function(value) {
-						return value == null || isNaN(value) ? 0 : +value;
-					};
+						: name === 'itempattern'
+						? function(value) {
+								value = new ItemPattern(value.item);
+								return value;
+							}
+							: function(value) {
+								return value == null || isNaN(value) ? 0 : +value;
+							};
 			this['get' + part] = function() {
 				return this._type === type
 					|| hasOverlap && /^hs[bl]$/.test(this._type)
@@ -11914,6 +11950,12 @@ var Color = Base.extend(new function() {
 					} else if (arg.constructor === Gradient) {
 						type = 'gradient';
 						values = args;
+					} else if (arg.constructor === Pattern) {
+						type = 'pattern';
+						values = args;
+					} else if (arg.constructor === ItemPattern) {
+						type = 'itempattern';
+						values = args;
 					} else {
 						type = 'hue' in arg
 							? 'lightness' in arg
@@ -11924,7 +11966,11 @@ var Color = Base.extend(new function() {
 								? 'gradient'
 								: 'gray' in arg
 									? 'gray'
-									: 'rgb';
+									: 'pattern' in arg
+										? 'pattern'
+										: 'itempattern' in arg
+											? 'itempattern'
+												:'rgb';
 						var properties = types[type],
 							parsers = componentParsers[type];
 						this._components = components = [];
@@ -12083,44 +12129,71 @@ var Color = Base.extend(new function() {
 		toCanvasStyle: function(ctx, matrix) {
 			if (this._canvasStyle)
 				return this._canvasStyle;
-			if (this._type !== 'gradient')
+			if (this._type !== 'gradient' && this._type !== 'pattern' && this._type !== 'itempattern')
 				return this._canvasStyle = this.toCSS();
-			var components = this._components,
-				gradient = components[0],
-				stops = gradient._stops,
-				origin = components[1],
-				destination = components[2],
-				highlight = components[3],
-				inverse = matrix && matrix.inverted(),
-				canvasGradient;
-			if (inverse) {
-				origin = inverse._transformPoint(origin);
-				destination = inverse._transformPoint(destination);
-				if (highlight)
-					highlight = inverse._transformPoint(highlight);
-			}
-			if (gradient._radial) {
-				var radius = destination.getDistance(origin);
-				if (highlight) {
-					var vector = highlight.subtract(origin);
-					if (vector.getLength() > radius)
-						highlight = origin.add(vector.normalize(radius - 0.1));
+
+			else if (this._type === 'gradient') {
+
+				var components = this._components,
+					gradient = components[0],
+					stops = gradient._stops,
+					origin = components[1],
+					destination = components[2],
+					highlight = components[3],
+					inverse = matrix && matrix.inverted(),
+					canvasGradient;
+				if (inverse) {
+					origin = inverse._transformPoint(origin);
+					destination = inverse._transformPoint(destination);
+					if (highlight)
+						highlight = inverse._transformPoint(highlight);
 				}
-				var start = highlight || origin;
-				canvasGradient = ctx.createRadialGradient(start.x, start.y,
+				if (gradient._radial) {
+					var radius = destination.getDistance(origin);
+					if (highlight) {
+						var vector = highlight.subtract(origin);
+						if (vector.getLength() > radius)
+							highlight = origin.add(vector.normalize(radius - 0.1));
+					}
+					var start = highlight || origin;
+					canvasGradient = ctx.createRadialGradient(start.x, start.y,
 						0, origin.x, origin.y, radius);
-			} else {
-				canvasGradient = ctx.createLinearGradient(origin.x, origin.y,
+				} else {
+					canvasGradient = ctx.createLinearGradient(origin.x, origin.y,
 						destination.x, destination.y);
-			}
-			for (var i = 0, l = stops.length; i < l; i++) {
-				var stop = stops[i],
-					offset = stop._offset;
-				canvasGradient.addColorStop(
+				}
+				for (var i = 0, l = stops.length; i < l; i++) {
+					var stop = stops[i],
+						offset = stop._offset;
+					canvasGradient.addColorStop(
 						offset == null ? i / (l - 1) : offset,
 						stop._color.toCanvasStyle());
+				}
+				return this._canvasStyle = canvasGradient;
 			}
-			return this._canvasStyle = canvasGradient;
+			else if (this._type==='pattern') {
+				var pattern = this._components[0],
+					image;
+							var that = this,
+							image = new Image();
+
+							if (!image.src) {
+								image.src = pattern._url;
+								image.onload = function () {
+									that._owner._changed(129);
+
+								}
+							}
+
+				if(image.complete)
+					return this._canvasStyle = ctx.createPattern(image, pattern._repeat);
+
+				return null;
+			}
+			else if (this._type ==='itempattern') {
+				var itempattern = this._components[0];
+				return this._canvasStyle = ctx.createPattern(itempattern.raster.getCanvas(), 'repeat');
+			}
 		},
 
 		transform: function(matrix) {
@@ -12191,6 +12264,139 @@ new function() {
 		};
 	}, {
 	});
+});
+
+var Pattern = Base.extend({
+	_class: 'Pattern',
+
+	initialize: function Pattern(url, repeat, width, height) {
+		this._id = Pattern._id = (Pattern._id || 0) + 1;
+		this.setUrl(url);
+		if(!repeat)
+			repeat = 'repeat'
+
+		this.setRepeat(repeat);
+		this.setWidth(width);
+		this.setHeight(height);
+		url = repeat = width = height = null;
+	},
+
+	_serialize: function(options, dictionary) {
+		return dictionary.add(this, function() {
+			return Base.serialize([this._class,this._url],
+				options, true, dictionary);
+		});
+	},
+
+	_changed: function() {
+		for (var i = 0, l = this._owners && this._owners.length; i < l; i++)
+			this._owners[i]._changed();
+	},
+
+	_addOwner: function(color) {
+		if (!this._owners)
+			this._owners = [];
+		this._owners.push(color);
+	},
+
+	_removeOwner: function(color) {
+		var index = this._owners ? this._owners.indexOf(color) : -1;
+		if (index !== -1) {
+			this._owners.splice(index, 1);
+			if (this._owners.length === 0)
+				delete this._owners;
+		}
+	},
+
+	clone: function() {
+		return new this.constructor(url);
+	},
+
+	getUrl: function() {
+		return this._url;
+	},
+
+	setUrl: function(url) {
+		this._url = url;
+		this._changed();
+	},
+
+	getRepeat: function() {
+		return this._repeat;
+	},
+	setRepeat: function(r) {
+		this._repeat = r;
+		this._changed();
+	},
+
+	getWidth: function() {
+		return this._width;
+	},
+	setWidth: function(w) {
+		this._width = w;
+		this._changed();
+	},
+
+	getHeight: function() {
+		return this._height;
+	},
+	setHeight: function(h) {
+		this._height = h;
+		this._changed();
+	},
+
+	equals: function(pattern) {
+		return pattern && pattern.constructor === this.constructor
+			&& this._url === pattern.getUrl() && this._repeat === pattern.getRepeat()
+			&& this._width === pattern.getWidth() && this._height === pattern.getHeight();
+	}
+});
+
+var ItemPattern = Base.extend({
+	_class: 'ItemPattern',
+	initialize: function ItemPattern(item, dontCenter) {
+		this._id = ItemPattern._id = (ItemPattern._id || 0) + 1;
+		item.remove();
+		if(item._class === 'Raster') {
+			this.item = item;
+			this.raster = item;
+		} else if (item) {
+			this.item = item.clone(false);
+			this.raster = this.item.rasterize(0,false);
+		} else {
+			this.raster = new Raster();
+		}
+	},
+
+	_serialize: function(options, dictionary) {
+		return dictionary.add(this, function() {
+			return Base.serialize([this._class, this._definition],
+				options, false, dictionary);
+		});
+	},
+	_changed: function() {
+		for (var i = 0, l = this._owners && this._owners.length; i < l; i++)
+			this._owners[i]._changed();
+	},
+
+	_addOwner: function(color) {
+		if (!this._owners)
+			this._owners = [];
+		this._owners.push(color);
+	},
+
+	_removeOwner: function(color) {
+		var index = this._owners ? this._owners.indexOf(color) : -1;
+		if (index !== -1) {
+			this._owners.splice(index, 1);
+			if (this._owners.length === 0)
+				delete this._owners;
+		}
+	},
+
+	clone: function() {
+		return new ItemPattern(this.item);
+	}
 });
 
 var Gradient = Base.extend({
@@ -13467,7 +13673,9 @@ new function() {
 				event.preventDefault();
 			}
 		},
-
+		isDragging: function() {
+			return dragging;
+		},
 		_handleKeyEvent: function(type, event, key, character) {
 			var scope = this._scope,
 				tool = scope.tool,
@@ -13923,7 +14131,7 @@ var Tool = PaperScopeItem.extend({
 	_reference: 'tool',
 	_events: ['onMouseDown', 'onMouseUp', 'onMouseDrag', 'onMouseMove',
 			'onActivate', 'onDeactivate', 'onEditOptions', 'onKeyDown',
-			'onKeyUp'],
+			'onKeyUp','onFrame'],
 
 	initialize: function Tool(props) {
 		PaperScopeItem.call(this);

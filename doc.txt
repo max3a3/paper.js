@@ -6,7 +6,7 @@ TODO
 
 upgraded to gulp 4, rename old gulpfile to gulpfile_old
   gulpfile is just a converted of gulp/tasks/build.js script which output full
-yarn run build
+gulp
 #gulp build
 
 note the changes in the dist/dist_changelog file
@@ -14,7 +14,10 @@ note the changes in the dist/dist_changelog file
   force yarn to grab the latest version of the branch by deleting the reference in yarn.lock
   check the updated yarn.lock match the latest commit
 
-
+---
+can't use width height for pattern image on canvas using context createpattern(Image)
+    https://stackoverflow.com/questions/13960564/resize-an-imagewith-javascript-for-use-inside-a-canvas-createpattern
+        has to create offscreen canvas
 
 ---
 some demo to create new paper item class\

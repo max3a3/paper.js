@@ -17,8 +17,11 @@
         var center = view.center;
         function onFrame(event) {
             var scale = (Math.sin(event.time * 2) + 1) / 2;
-            raster.scale(scale / lastScale);
+           raster.scale(scale / lastScale);
             lastScale = scale;
+            raster.shadowColor = "#009f16";
+            raster.shadowBlur = 10;
+            raster.shadowOffset = new Point(20,20);
             raster.position = center + [
                 Math.sin(event.time * 3) * 256,
                 Math.sin(event.time * 2.5) * 256
