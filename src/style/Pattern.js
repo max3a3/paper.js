@@ -16,7 +16,7 @@ var Pattern = Base.extend({
 
     _serialize: function(options, dictionary) {
         return dictionary.add(this, function() {
-            return Base.serialize(url,
+            return Base.serialize([this._class,this._url],
                 options, true, dictionary);
         });
     },
@@ -45,7 +45,7 @@ var Pattern = Base.extend({
      */
     _removeOwner: function(color) {
         var index = this._owners ? this._owners.indexOf(color) : -1;
-        if (index != -1) {
+        if (index !== -1) {
             this._owners.splice(index, 1);
             if (this._owners.length === 0)
                 delete this._owners;

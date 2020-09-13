@@ -48,7 +48,8 @@ var Color = Base.extend(new function() {
         hsb: ['hue', 'saturation', 'brightness'],
         hsl: ['hue', 'saturation', 'lightness'],
         gradient: ['gradient', 'origin', 'destination', 'highlight'],
-        pattern: ['pattern', 'url', 'repeat', 'width', 'height']
+        pattern: ['pattern', 'url', 'repeat', 'width', 'height'],
+        itempattern: ['itempattern', 'item']
     };
 
     // Parsers of values for setters, by type and property
@@ -276,7 +277,6 @@ var Color = Base.extend(new function() {
         // Keep track of parser functions per type.
         componentParsers[type] = [];
         Base.each(properties, function(name, index) {
-            console.log("installing parser",name)
 
             var part = Base.capitalize(name),
                 // Both hue and saturation have overlapping properties between
@@ -314,17 +314,21 @@ var Color = Base.extend(new function() {
                     : name === 'pattern'
                         ? function(value) {
                             value = new Pattern(value.url, value.repeat, value.width, value.height);
-                            value._addOwner(this);
                             return value;
                         }
-                // Normal number component properties:
-                        : function(value) {
-                            // NOTE: We don't clamp values here, they're only
-                            // clamped once the actual CSS values are produced.
-                            // Gotta love the fact that isNaN(null) is false,
-                            // while isNaN(undefined) is true.
-                            return value == null || isNaN(value) ? 0 : +value;
-                        };
+                        : name === 'itempattern'
+                        ? function(value) {
+                                value = new ItemPattern(value.item);
+                                return value;
+                            }
+                    // Normal number component properties:
+                            : function(value) {
+                                // NOTE: We don't clamp values here, they're only
+                                // clamped once the actual CSS values are produced.
+                                // Gotta love the fact that isNaN(null) is false,
+                                // while isNaN(undefined) is true.
+                                return value == null || isNaN(value) ? 0 : +value;
+                            };
             this['get' + part] = function() {
                 return this._type === type
                     || hasOverlap && /^hs[bl]$/.test(this._type)
@@ -648,6 +652,9 @@ var Color = Base.extend(new function() {
                     } else if (arg.constructor === Pattern) {
                         type = 'pattern';
                         values = args;
+                    } else if (arg.constructor === ItemPattern) {
+                        type = 'itempattern';
+                        values = args;
                     } else {
                         // Determine type by presence of object property names
                         type = 'hue' in arg
@@ -661,7 +668,9 @@ var Color = Base.extend(new function() {
                                     ? 'gray'
                                     : 'pattern' in arg
                                         ? 'pattern'
-                                        :'rgb';
+                                        : 'itempattern' in arg
+                                            ? 'itempattern'
+                                                :'rgb';
                         // Convert to array and parse in one loop, for efficiency
                         var properties = types[type],
                             parsers = componentParsers[type];
@@ -928,7 +937,7 @@ var Color = Base.extend(new function() {
             if (this._canvasStyle)
                 return this._canvasStyle;
             // Normal colors are simply represented by their CSS string.
-            if (this._type !== 'gradient' && this._type !== 'pattern')
+            if (this._type !== 'gradient' && this._type !== 'pattern' && this._type !== 'itempattern')
                 return this._canvasStyle = this.toCSS();
 
             else if (this._type === 'gradient') {
@@ -978,7 +987,7 @@ var Color = Base.extend(new function() {
                 }
                 return this._canvasStyle = canvasGradient;
             }
-            else { // pattern
+            else if (this._type==='pattern') { // pattern
                 var pattern = this._components[0],
                     image;
                 /*#*/ if (!__options.node) {
@@ -1013,6 +1022,10 @@ var Color = Base.extend(new function() {
                     return this._canvasStyle = ctx.createPattern(image, pattern._repeat);
 
                 return null;
+            }
+            else if (this._type ==='itempattern') {
+                var itempattern = this._components[0];
+                return this._canvasStyle = ctx.createPattern(itempattern.raster.getCanvas(), 'repeat');
             }
         },
 

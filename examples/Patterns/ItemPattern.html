@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Patterns</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script type="text/javascript" src="../../dist/paper-full.js"></script>
+
+    <script type="text/paperscript" canvas="canvas">
+        var grp = new Group([new Path.Circle({fillColor: "red", radius: 3}), new Path.Rectangle({fillColor: "green", size: [5, 10], position: [2, 10]})]);
+        var pattern = new ItemPattern(grp);
+
+        var url = 'http://www.w3schools.com/tags/img_lamp.jpg';
+        var raster = new Raster(url);
+
+        raster.onLoad = function() {
+
+            var patternRaster = new ItemPattern(raster);
+            var rasterCircle = new Path.Circle({fillColor: patternRaster, radius: 25, center: [150, 130], strokeColor: "yellow"});
+
+            rasterCircle.onMouseMove = function(e) {
+                rasterCircle.position += e.delta;
+            };
+        };
+
+        var mainbox = new Path.Rectangle({fillColor: pattern, position: [60, 100], size: [100, 100], strokeColor: "green"});
+        var otherbox = new Path.Rectangle({fillColor: { itempattern: { item: new Path.Circle({fillColor: "green", radius: 3}) } }, position: [60, 250], size: [100, 100]});
+
+
+        var url2 = 'https://icons.iconarchive.com/icons/martz90/circle/32/camera-icon.png';
+        var raster2 = new Raster(url2, [0,0]);
+
+        raster2.onLoad = function() {
+            var patternRaster = new ItemPattern(raster2);
+
+            var rasterBox = new Path.Rectangle({fillColor: patternRaster, position: [400, 20], size: [300, 400], strokeColor: "blue"});
+        };
+    </script>
+</head>
+<body style="background:black">
+<canvas id="canvas" resize></canvas>
+</body>
+</html>
