@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>App1</title>
+    <link rel="stylesheet" href="./style.css">
+    <script type="text/javascript" src="./node_modules/jquery/dist/jquery.js"></script>
+    <script type="text/javascript" src="./node_modules/babel-polyfill/dist/polyfill.js"></script>
+    <script type="text/javascript" src="../src/load.js"></script>
+    <script type="text/javascript" src="./js/test_fill.js?a=3"></script>
+</head>
+<body>
+<div class="flex_container">
+    <div class="flex_item">
+        <div>
+            test fill
+        </div>
+        <button id="fillnative">fillnative</button>
+        <button id="fillsvg">fillsvg</button>
+        <button id="fillpaper1">fillbig</button>
+        <button id="fillpaper2">fillsmall</button>
+        <button id="gradient">gradient</button>
+        <button id="strokepaper">strokepaper</button>
+<br/>
+        <button id="move">move</button>
+        <button id="b_dump">dump</button>
+
+        <textarea class="textarea_long" id="textinput">blah blah</textarea>
+    </div>
+    <div class="flex_item">
+        <canvas id="canvas" resize></canvas>
+    </div>
+</div>
+</body>
+</html>
