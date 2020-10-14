@@ -1,9 +1,70 @@
 // test caching path point with simplify parameter prop
+function drawSegments(ctx, path, matrix) {
+    var segments = path._segments,
+        length = segments.length,
+        coords = new Array(6),
+        first = true,
+        curX, curY,
+        prevX, prevY,
+        inX, inY,
+        outX, outY;
+
+    function drawSegment(segment) {
+        // Optimise code when no matrix is provided by accessing segment
+        // points hand handles directly, since this is the default when
+        // drawing paths. Matrix is only used for drawing selections and
+        // when #strokeScaling is false.
+        if (matrix) {
+            segment._transformCoordinates(matrix, coords);
+            curX = coords[0];
+            curY = coords[1];
+        } else {
+            var point = segment._point;
+            curX = point._x;
+            curY = point._y;
+        }
+        if (first) {
+            ctx.moveTo(curX, curY);
+            first = false;
+        } else {
+            if (matrix) {
+                inX = coords[2];
+                inY = coords[3];
+            } else {
+                var handle = segment._handleIn;
+                inX = curX + handle._x;
+                inY = curY + handle._y;
+            }
+            if (inX === curX && inY === curY
+                && outX === prevX && outY === prevY) {
+                ctx.lineTo(curX, curY);
+            } else {
+                ctx.bezierCurveTo(outX, outY, inX, inY, curX, curY);
+            }
+        }
+        prevX = curX;
+        prevY = curY;
+        if (matrix) {
+            outX = coords[4];
+            outY = coords[5];
+        } else {
+            var handle = segment._handleOut;
+            outX = prevX + handle._x;
+            outY = prevY + handle._y;
+        }
+    }
+
+    for (var i = 0; i < length; i++)
+        drawSegment(segments[i]);
+    // Close path by drawing first segment again
+    if (path._closed && length > 0)
+        drawSegment(segments[0]);
+}
 let PathCustomPaper = paper.Path.extend(
     {
         _class: "SimplifyPath",
         initialize: function PathCustom(arg) {
-            debugger // what happened with arg? not important as we don't use it to pass points normally?
+           // debugger // what happened with arg? not important as we don't use it to pass points normally?
             // call  super
             PathCustom.base.call(this, arg); //StarClass is the function name
             this._smoothVersion = 0
@@ -15,12 +76,12 @@ let PathCustomPaper = paper.Path.extend(
         // _draw: function (ctx, param, parentStrokeMatrix) {
         //     debugger
         // },
-        draw: function PathCustomDraw (ctx, param, parentStrokeMatrix) {
+        draw: function PathCustomDraw(ctx, param, parentStrokeMatrix) {
             debugger
             if (!this._originalSegments) {
                 this._originalSegments = _.clone(this._segments)  // need to create new array with same data pointer
             }
-            if (this._smoothFactor && this.version!==this._smoothVersion) {
+            if (this._smoothFactor && this.version !== this._smoothVersion) {
                 this._smoothVersion = this.version // take note when it is simplified so any change to segments will resimplify
 
                 this.simplify(this._smoothFactor) // take out the segments with smoothed one
@@ -44,8 +105,70 @@ let PathCustomPaper = paper.Path.extend(
         getSmoothFactor: function () {   //<---   prop getter
             return this._smoothFactor
         },
+        lineWeight: function(w) {
+
+        },
+        _draw: function PathCustom_draw(ctx, param, viewMatrix, strokeMatrix) {
+            // if editing
+            if (this._selection)
+                PathCustom_draw.base.call(this,ctx, param, viewMatrix, strokeMatrix)
+
+            var dontStart = param.dontStart,
+                dontPaint = param.dontFinish || param.clip,
+                style = this.getStyle(),
+                hasFill = style.hasFill(),
+                hasStroke = style.hasStroke(),
+                dashArray = style.getDashArray(),
+                // dashLength is only set if we can't draw dashes natively
+                dashLength = !paper.support.nativeDash && hasStroke
+                    && dashArray && dashArray.length;
+
+            if (!dontStart)
+                ctx.beginPath();
+
+            if (hasFill || hasStroke && !dashLength || dontPaint) {
+                // Prepare the canvas path if we have any situation that
+                // requires it to be defined.
+                drawSegments(ctx, this, strokeMatrix);
+                if (this._closed)
+                    ctx.closePath();
+            }
 
 
+            if (!dontPaint && (hasFill || hasStroke)) {
+                // If the path is part of a compound path or doesn't have a fill
+                // or stroke, there is no need to continue.
+                this._setStyles(ctx, param, viewMatrix);
+                var bounds=null
+                if (hasFill) {
+                    if (style.fillColor._type === 'pattern' || style.fillColor._type === 'itempattern'){
+                        bounds = this._getBounds(null,{});
+
+                        ctx.translate(bounds.x, bounds.y); 	// Prevents pattern to appear moving when path is dragged
+                    }
+
+                    ctx.fill(style.getFillRule());
+                    if (style.fillColor._type === 'pattern' || style.fillColor._type === 'itempattern'){
+                        ctx.translate(-bounds.x, -bounds.y); 	// Prevents pattern to appear moving when path is dragged
+                    }
+                    // If shadowColor is defined, clear it after fill, so it
+                    // won't be applied to both fill and stroke. If the path is
+                    // only stroked, we don't have to clear it.
+                    ctx.shadowColor = 'rgba(0,0,0,0)';
+                }
+                if (hasStroke) {
+
+                    if (style.strokeColor._type === 'pattern' || style.strokeColor._type === 'itempattern'){
+                        if (!bounds)
+                            bounds = this._getBounds(null,{});
+
+                        ctx.translate(bounds.x, bounds.y); 	// Prevents pattern to appear moving when path is dragged
+                    }
+
+                    ctx.stroke();
+                }
+            }
+        },
     })
 
 /*
@@ -76,8 +199,8 @@ let BrushCustomPaper = paper.Item.extend(
 
         // copy of Shape
         initialize: function BrushCustom(props = {}, points = []) {
-            let point =null
-              // point =   [40,80] // initial translate , has to pass in so it set the translate matrix
+            let point = null
+            // point =   [40,80] // initial translate , has to pass in so it set the translate matrix
             this._initialize(props, point);
             //   this.brush = new BrushThin();
             this.setPoints(points);
@@ -116,8 +239,9 @@ let BrushCustomPaper = paper.Item.extend(
         }
     }
 );
+
 function drawCustomCircle() {
-    var shape =new CircleCustomPaper(
+    var shape = new CircleCustomPaper(
         {
             center: [40, 20],
             radius: 13,
@@ -127,11 +251,12 @@ function drawCustomCircle() {
 
     var circle2 = shape.clone()
 
-    circle2.position =[160, 160]
+    circle2.position = [160, 160]
     circle2.radius = 50
     circle2.fillColor = "red"
 
 }
+
 let myCustomPath // global
 function btn_handler(n) {
     console.log("btn_handler", n)
@@ -193,7 +318,7 @@ function btn_handler(n) {
             break
         }
         case 'circle_shape':
-           drawCustomCircle()
+            drawCustomCircle()
             break
         case 'bound_rect':
             // change bound see the path data, test in scratchpad
@@ -214,7 +339,7 @@ function btn_handler(n) {
 
             break
         case 'brush':
-            let starObject = new BrushCustomPaper({position:[40,80]}, [[34, 54], [50, 80]]); //global
+            let starObject = new BrushCustomPaper({position: [40, 80]}, [[34, 54], [50, 80]]); //global
             /*let style = {
                 // fillColor: new paper.Color(1, 0, 0),
                 // strokeColor: 'black',
@@ -227,19 +352,34 @@ function btn_handler(n) {
 */
             break
 
-        case 'path_cache':
+        case 'path_cache': {
             console.log('path_cache')
             let points = [[10, 10], [20, 15], [35, 40], [50, 50], [60, 40], [55, 30], [70, 10], [75, 30], [85, 50]]
-            myCustomPath = new PathCustomPaper({project:paper.project}) //new paper.Path();
+            myCustomPath = new PathCustomPaper({project: paper.project}) //new paper.Path();
             myCustomPath.strokeColor = 'black';
             points.forEach(p =>
                 myCustomPath.add(p))
 
             myCustomPath.smoothFactor = 2 //(simplify)
-
+        }
             break
         case 'change_path_smooth' :
             myCustomPath.smoothFactor = myCustomPath.smoothFactor + 4
+            break
+        case 'path_weight': {
+            let points = [ [20, 15], [35, 40],[45, 30]]
+            myCustomPath = new PathCustomPaper({project: paper.project}) //new paper.Path();
+            myCustomPath.strokeColor = 'black';
+            myCustomPath.moveTo([10,10])
+            myCustomPath.lineTo([15,5])
+            let weight = 2
+            points.forEach(p =>{
+                myCustomPath.lineWeight(weight)
+                myCustomPath.lineTo(p)
+                weight++
+            })
+        }
+            break
     }
 }
 
@@ -252,7 +392,7 @@ function serialize() {
 
     but when rerendered it is a group not a layer
     */
-    let layer =  new paper.Layer()
+    let layer = new paper.Layer()
     let props = {
         "type": "L33INE",
         "pathData": "M101.10098,78.4327l127,128",
@@ -279,21 +419,22 @@ function serialize() {
     let value
     debugger
 
-/* test exporting group */ // same data as layer
+    /* test exporting group */ // same data as layer
     // let group = new paper.Group()
     // group.addChild(path)
     // value = group.exportJSON({asString:false,precision: 16})
 
 
-/* test exporting layer */
-    value = Base.serialize(layer,{precision: 16})
+    /* test exporting layer */
+    value = Base.serialize(layer, {precision: 16})
 
-     // value = paper.exportJSON({asString: false})
+    // value = paper.exportJSON({asString: false})
 
-    let jsonString= JSON.stringify(value, undefined, 2)
+    let jsonString = JSON.stringify(value, undefined, 2)
     console.log(jsonString)
 
 }
+
 function deserialize() {
     let data
     // data = GROUP_SIMPLE
@@ -303,18 +444,20 @@ function deserialize() {
     let group = new paper.Group()
     group.importJSON(data)
 }
+
 function jsongroup() {
     let data = GROUP_SIMPLE
- debugger
+    debugger
     let jsonData = {children: data[1].children}
     // need to delete all group specific field, just want the children?
     // delete jsonData['applyMatrix']
 
     //pass paper so group created has the same project
-    var group =new JsonGroupClassPaper(
+    var group = new JsonGroupClassPaper(
         {jsonData})
 
 }
+
 document.addEventListener('DOMContentLoaded', () => {
 
         var canvas = document.getElementById('canvas');
@@ -324,21 +467,22 @@ document.addEventListener('DOMContentLoaded', () => {
         $("#add_line_path_color").click(() => btn_handler('line_color'));
         $("#bound_rect").click(() => btn_handler('bound_rect'));
         $("#circle_shape").click(() => btn_handler('circle_shape'));
-    $("#path_cache").click(() => btn_handler('path_cache'));
+        $("#path_cache").click(() => btn_handler('path_cache'));
     $("#brush").click(() => btn_handler('brush'));
-    $("#serialize").click(() => serialize());
+    $("#path_weight").click(() => btn_handler('path_weight'));
+        $("#serialize").click(() => serialize());
     $("#deserialize").click(() => deserialize());
     $("#jsongroup").click(() => jsongroup());
     $("#dumppaper").click(()=>{
             let value = paper.project.exportJSON({asString: false})
-            let val =JSON.stringify(value, undefined, 2)
-             console.log(val)
+            let val = JSON.stringify(value, undefined, 2)
+            console.log(val)
         })
 
-    $("#change_path_smooth").click(() => {
-        myCustomPath.smoothFactor = myCustomPath.smoothFactor + 6  //calling btn_handler will clear project
-    console.log("myCustomPath.smoothFactor",myCustomPath.smoothFactor)
-    });  // just test the skeleton
+        $("#change_path_smooth").click(() => {
+            myCustomPath.smoothFactor = myCustomPath.smoothFactor + 6  //calling btn_handler will clear project
+            console.log("myCustomPath.smoothFactor", myCustomPath.smoothFactor)
+        });  // just test the skeleton
         // not yet
 
     }
