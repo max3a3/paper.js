@@ -1,5 +1,5 @@
 // test caching path point with simplify parameter prop
-function drawSegments(ctx, path, matrix) {
+function drawSegments(ctx, path, matrix, checkWeight = false) {
     var segments = path._segments,
         length = segments.length,
         coords = new Array(6),
@@ -35,6 +35,12 @@ function drawSegments(ctx, path, matrix) {
                 inX = curX + handle._x;
                 inY = curY + handle._y;
             }
+            if (checkWeight && segment.weight !== undefined) {
+                ctx.stroke();
+                ctx.beginPath()
+                ctx.moveTo(prevX, prevY)
+                ctx.lineWidth = segment.weight
+            }
             if (inX === curX && inY === curY
                 && outX === prevX && outY === prevY) {
                 ctx.lineTo(curX, curY);
@@ -60,11 +66,12 @@ function drawSegments(ctx, path, matrix) {
     if (path._closed && length > 0)
         drawSegment(segments[0]);
 }
+
 let PathCustomPaper = paper.Path.extend(
     {
         _class: "SimplifyPath",
         initialize: function PathCustom(arg) {
-           // debugger // what happened with arg? not important as we don't use it to pass points normally?
+            // debugger // what happened with arg? not important as we don't use it to pass points normally?
             // call  super
             PathCustom.base.call(this, arg); //StarClass is the function name
             this._smoothVersion = 0
@@ -105,28 +112,29 @@ let PathCustomPaper = paper.Path.extend(
         getSmoothFactor: function () {   //<---   prop getter
             return this._smoothFactor
         },
-        lineWeight: function(w) {
-
+        lineWeight: function (w) {
+            debugger
+            let segmentLast = this._segments.length - 1
+            if (segmentLast > 0)
+                this._segments[segmentLast].weight = w
         },
         _draw: function PathCustom_draw(ctx, param, viewMatrix, strokeMatrix) {
             // if editing
-            if (this._selection)
-                PathCustom_draw.base.call(this,ctx, param, viewMatrix, strokeMatrix)
-
+            if (this._selection) {
+                PathCustom_draw.base.call(this, ctx, param, viewMatrix, strokeMatrix)
+                return
+            }
             var dontStart = param.dontStart,
                 dontPaint = param.dontFinish || param.clip,
                 style = this.getStyle(),
                 hasFill = style.hasFill(),
                 hasStroke = style.hasStroke(),
-                dashArray = style.getDashArray(),
-                // dashLength is only set if we can't draw dashes natively
-                dashLength = !paper.support.nativeDash && hasStroke
-                    && dashArray && dashArray.length;
+                hasWeight = this._segments.filter(s => s.weight).length
 
             if (!dontStart)
                 ctx.beginPath();
 
-            if (hasFill || hasStroke && !dashLength || dontPaint) {
+            if (hasFill || (hasStroke && !hasWeight)  || dontPaint) {
                 // Prepare the canvas path if we have any situation that
                 // requires it to be defined.
                 drawSegments(ctx, this, strokeMatrix);
@@ -139,16 +147,16 @@ let PathCustomPaper = paper.Path.extend(
                 // If the path is part of a compound path or doesn't have a fill
                 // or stroke, there is no need to continue.
                 this._setStyles(ctx, param, viewMatrix);
-                var bounds=null
+                var bounds = null
                 if (hasFill) {
-                    if (style.fillColor._type === 'pattern' || style.fillColor._type === 'itempattern'){
-                        bounds = this._getBounds(null,{});
+                    if (style.fillColor._type === 'pattern' || style.fillColor._type === 'itempattern') {
+                        bounds = this._getBounds(null, {});
 
                         ctx.translate(bounds.x, bounds.y); 	// Prevents pattern to appear moving when path is dragged
                     }
 
                     ctx.fill(style.getFillRule());
-                    if (style.fillColor._type === 'pattern' || style.fillColor._type === 'itempattern'){
+                    if (style.fillColor._type === 'pattern' || style.fillColor._type === 'itempattern') {
                         ctx.translate(-bounds.x, -bounds.y); 	// Prevents pattern to appear moving when path is dragged
                     }
                     // If shadowColor is defined, clear it after fill, so it
@@ -157,15 +165,22 @@ let PathCustomPaper = paper.Path.extend(
                     ctx.shadowColor = 'rgba(0,0,0,0)';
                 }
                 if (hasStroke) {
+                    debugger
+                    if (hasWeight) {
+                        ctx.beginPath();
+                        drawSegments(ctx, this, strokeMatrix,true);
+                        ctx.stroke();
 
-                    if (style.strokeColor._type === 'pattern' || style.strokeColor._type === 'itempattern'){
-                        if (!bounds)
-                            bounds = this._getBounds(null,{});
+                    } else {
+                        if (style.strokeColor._type === 'pattern' || style.strokeColor._type === 'itempattern') {
+                            if (!bounds)
+                                bounds = this._getBounds(null, {});
 
-                        ctx.translate(bounds.x, bounds.y); 	// Prevents pattern to appear moving when path is dragged
+                            ctx.translate(bounds.x, bounds.y); 	// Prevents pattern to appear moving when path is dragged
+                        }
+
+                        ctx.stroke();
                     }
-
-                    ctx.stroke();
                 }
             }
         },
@@ -367,16 +382,18 @@ function btn_handler(n) {
             myCustomPath.smoothFactor = myCustomPath.smoothFactor + 4
             break
         case 'path_weight': {
-            let points = [ [20, 15], [35, 40],[45, 30]]
+            let points = [[20, 15], [60, 20], [45, 40]]
             myCustomPath = new PathCustomPaper({project: paper.project}) //new paper.Path();
             myCustomPath.strokeColor = 'black';
-            myCustomPath.moveTo([10,10])
-            myCustomPath.lineTo([15,5])
+            myCustomPath.strokeWidth = 1;
+            // myCustomPath.fillColor = 'red';
+            myCustomPath.moveTo([10, 10])
+            myCustomPath.lineTo([15, 5])
             let weight = 2
-            points.forEach(p =>{
+            points.forEach(p => {
                 myCustomPath.lineWeight(weight)
                 myCustomPath.lineTo(p)
-                weight++
+                weight+=2
             })
         }
             break
@@ -468,12 +485,12 @@ document.addEventListener('DOMContentLoaded', () => {
         $("#bound_rect").click(() => btn_handler('bound_rect'));
         $("#circle_shape").click(() => btn_handler('circle_shape'));
         $("#path_cache").click(() => btn_handler('path_cache'));
-    $("#brush").click(() => btn_handler('brush'));
-    $("#path_weight").click(() => btn_handler('path_weight'));
+        $("#brush").click(() => btn_handler('brush'));
+        $("#path_weight").click(() => btn_handler('path_weight'));
         $("#serialize").click(() => serialize());
-    $("#deserialize").click(() => deserialize());
-    $("#jsongroup").click(() => jsongroup());
-    $("#dumppaper").click(()=>{
+        $("#deserialize").click(() => deserialize());
+        $("#jsongroup").click(() => jsongroup());
+        $("#dumppaper").click(() => {
             let value = paper.project.exportJSON({asString: false})
             let val = JSON.stringify(value, undefined, 2)
             console.log(val)
