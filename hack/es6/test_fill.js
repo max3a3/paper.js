@@ -56,7 +56,6 @@ function itemfill(style = 1) {
                                               // not in the scene graph
 
 
-
             ret = new Path.Rectangle({
                 fillColor: {
                     pattern:
@@ -128,6 +127,33 @@ function fillPaper(style = 1) {
             circle.fillColor = new Pattern('https://icons.iconarchive.com/icons/martz90/circle/32/camera-icon.png')
 
             break
+        case 'noise': {
+
+            var texture = new TG.Texture(256, 256)
+                .add(new TG.Noise())
+                .toCanvas();
+
+            circle.fillColor = {
+                itempattern: {
+                    item: texture
+                }
+            }
+            circle.position = [180, 30]
+            break
+        }
+        case 'pixelate': {
+            var texture = new TG.Texture(256, 256)
+                .set(new TG.Noise())
+                .set(new TG.Pixelate().size(5, 5))
+                .toCanvas();
+            circle.fillColor = {
+                itempattern: {
+                    item: texture
+                }
+            }
+            circle.position = [180, 80]
+        }
+            break
     }
 
 
@@ -141,7 +167,14 @@ mozimg.src = 'https://mdn.mozillademos.org/files/222/Canvas_createpattern.png';
 function app_init(paper) {
     var canvas = document.getElementById('canvas');
     var ctx = canvas.getContext('2d');
+    $("#noisefill").click(() => {
 
+        fillPaper('noise')
+    })
+    $("#pixelate").click(() => {
+
+        fillPaper('pixelate')
+    })
     $("#fillnative").click(() => {
         if (mozimg.complete) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
