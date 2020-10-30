@@ -145,13 +145,14 @@ function fillPaper(style = 1) {
             var texture = new TG.Texture(256, 256)
                 .set(new TG.Noise())
                 .set(new TG.Pixelate().size(5, 5))
+                .alpha()
                 .toCanvas();
             circle.fillColor = {
                 itempattern: {
                     item: texture
                 }
             }
-            circle.position = [180, 80]
+            circle.position = [180, 60]
         }
             break
     }
@@ -163,6 +164,8 @@ function fillPaper(style = 1) {
 let offsetX = 5
 var mozimg = new Image();
 mozimg.src = 'https://mdn.mozillademos.org/files/222/Canvas_createpattern.png';
+var mozimg2 = new Image();
+mozimg2.src = 'https://www.dotabuff.com/assets/skills/silencer-last-word-5379-f67dc5cefa7335c3560e61ad050dda9e0db6c5865b82e5cb8b367a254c365f63.jpg';
 
 function app_init(paper) {
     var canvas = document.getElementById('canvas');
@@ -189,6 +192,40 @@ function app_init(paper) {
             offsetX += 7
             // ctx.restore();
             console.log("offset", offsetX)
+
+        }
+        ;
+
+    })
+    $("#fillnative2").click(() => {
+        var texture = new TG.Texture(256, 256)
+            .add(new TG.Noise())
+            .set(new TG.Pixelate().size(5, 5))
+            .alpha()
+            .toCanvas();
+
+        if (mozimg2.complete) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            var pattern = ctx.createPattern(mozimg2, 'repeat');
+            var pattern2 = ctx.createPattern(texture, 'repeat');
+
+
+            ctx.save();
+            ctx.translate(offsetX, 0)
+            ctx.fillStyle = pattern;
+            ctx.fillRect(10, 10, 300, 300);
+            ctx.translate(-offsetX, 0)
+            offsetX += 7
+            ctx.restore();
+
+
+            // ctx.fillStyle = "#F00";
+            ctx.fillStyle = pattern2;
+            ctx.fillRect(60, 40, 160, 260);
+
+            console.log("offset", offsetX)
+
+
 
         }
         ;
