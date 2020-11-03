@@ -1,71 +1,5 @@
 // test caching path point with simplify parameter prop
-function drawSegments(ctx, path, matrix, checkWeight = false) {
-    var segments = path._segments,
-        length = segments.length,
-        coords = new Array(6),
-        first = true,
-        curX, curY,
-        prevX, prevY,
-        inX, inY,
-        outX, outY;
 
-    function drawSegment(segment) {
-        // Optimise code when no matrix is provided by accessing segment
-        // points hand handles directly, since this is the default when
-        // drawing paths. Matrix is only used for drawing selections and
-        // when #strokeScaling is false.
-        if (matrix) {
-            segment._transformCoordinates(matrix, coords);
-            curX = coords[0];
-            curY = coords[1];
-        } else {
-            var point = segment._point;
-            curX = point._x;
-            curY = point._y;
-        }
-        if (first) {
-            ctx.moveTo(curX, curY);
-            first = false;
-        } else {
-            if (matrix) {
-                inX = coords[2];
-                inY = coords[3];
-            } else {
-                var handle = segment._handleIn;
-                inX = curX + handle._x;
-                inY = curY + handle._y;
-            }
-            if (checkWeight && segment.weight !== undefined) {
-                ctx.stroke();
-                ctx.beginPath()
-                ctx.moveTo(prevX, prevY)
-                ctx.lineWidth = segment.weight
-            }
-            if (inX === curX && inY === curY
-                && outX === prevX && outY === prevY) {
-                ctx.lineTo(curX, curY);
-            } else {
-                ctx.bezierCurveTo(outX, outY, inX, inY, curX, curY);
-            }
-        }
-        prevX = curX;
-        prevY = curY;
-        if (matrix) {
-            outX = coords[4];
-            outY = coords[5];
-        } else {
-            var handle = segment._handleOut;
-            outX = prevX + handle._x;
-            outY = prevY + handle._y;
-        }
-    }
-
-    for (var i = 0; i < length; i++)
-        drawSegment(segments[i]);
-    // Close path by drawing first segment again
-    if (path._closed && length > 0)
-        drawSegment(segments[0]);
-}
 
 let PathCustomPaper = paper.Path.extend(
     {
@@ -383,7 +317,7 @@ function btn_handler(n) {
             break
         case 'path_weight': {
             let points = [[20, 15], [60, 20], [45, 40]]
-            myCustomPath = new PathCustomPaper({project: paper.project}) //new paper.Path();
+            myCustomPath = new WeightedPathCustomPaper({project: paper.project}) //new paper.Path();
             myCustomPath.strokeColor = 'black';
             myCustomPath.strokeWidth = 1;
             // myCustomPath.fillColor = 'red';
