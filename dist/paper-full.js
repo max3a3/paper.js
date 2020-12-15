@@ -9,7 +9,7 @@
  *
  * All rights reserved.
  *
- * Date: Sat Sep 12 22:04:32 2020 -0700
+ * Date: Mon Dec 14 20:01:30 2020 -0800
  *
  ***
  *
@@ -819,6 +819,9 @@ var PaperScope = Base.extend({
 			if (agent.atom)
 				delete agent.chrome;
 		}
+		if (!this.CanvasProvider)
+			this.CanvasProvider = CanvasProvider
+
 	},
 
 	version: "0.12.11-wng_test",
@@ -12192,7 +12195,10 @@ var Color = Base.extend(new function() {
 			}
 			else if (this._type ==='itempattern') {
 				var itempattern = this._components[0];
-				return this._canvasStyle = ctx.createPattern(itempattern.raster.getCanvas(), 'repeat');
+				if (itempattern.item && typeof itempattern.item.tagName==='string')
+					return this._canvasStyle = ctx.createPattern(itempattern.item, 'repeat');
+				else
+					return this._canvasStyle = ctx.createPattern(itempattern.raster.getCanvas(), 'repeat');
 			}
 		},
 
@@ -12356,15 +12362,19 @@ var ItemPattern = Base.extend({
 	_class: 'ItemPattern',
 	initialize: function ItemPattern(item, dontCenter) {
 		this._id = ItemPattern._id = (ItemPattern._id || 0) + 1;
-		item.remove();
-		if(item._class === 'Raster') {
-			this.item = item;
-			this.raster = item;
-		} else if (item) {
-			this.item = item.clone(false);
-			this.raster = this.item.rasterize(0,false);
-		} else {
-			this.raster = new Raster();
+		if (typeof(item.tagName)==='string')
+			this.item= item
+		else {
+			item.remove();
+			if (item._class === 'Raster') {
+				this.item = item;
+				this.raster = item;
+			} else if (item) {
+				this.item = item.clone(false);
+				this.raster = this.item.rasterize(0, false);
+			} else {
+				this.raster = new Raster();
+			}
 		}
 	},
 

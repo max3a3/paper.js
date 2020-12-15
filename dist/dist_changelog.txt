@@ -23,3 +23,9 @@ c749c28115f2a1956010c1d30bbecfce727ecfd0
 itempattern {itempattern: }  can use paper item as fill or raster
 504d7b3eec38cb457c5cf20a20e5b36fac0ae68f
 
+expose this.CanvasProvider in the PaperScope
+3e20c2c353d2f29a576b530a4685f6d4982414b5
+
+
+allow Canvas object to be pattern (usecase of texgen  see test_fill.js line #132
+a5f32477418d0855669632c849756c8d1c8c0745
