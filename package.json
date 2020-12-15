@@ -22,8 +22,7 @@
     "docs": "gulp docs",
     "load": "gulp load",
     "jshint": "gulp jshint",
-    "test": "gulp test",
-    "preinstall": "[[ $npm_config_heading == 'npm' ]] && npx npm-force-resolutions || true"
+    "test": "gulp test"
   },
   "files": [
     "AUTHORS.md",

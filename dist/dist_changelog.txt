@@ -29,3 +29,5 @@ expose this.CanvasProvider in the PaperScope
 
 allow Canvas object to be pattern (usecase of texgen  see test_fill.js line #132
 a5f32477418d0855669632c849756c8d1c8c0745
+
+remove preinstall in package.json, crap out with yarn install in windows
