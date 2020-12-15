@@ -1025,7 +1025,10 @@ var Color = Base.extend(new function() {
             }
             else if (this._type ==='itempattern') {
                 var itempattern = this._components[0];
-                return this._canvasStyle = ctx.createPattern(itempattern.raster.getCanvas(), 'repeat');
+                if (itempattern.item && typeof itempattern.item.tagName==='string')
+                    return this._canvasStyle = ctx.createPattern(itempattern.item, 'repeat');
+                else
+                    return this._canvasStyle = ctx.createPattern(itempattern.raster.getCanvas(), 'repeat');
             }
         },
 

@@ -3,15 +3,19 @@ var ItemPattern = Base.extend({
     initialize: function ItemPattern(item, dontCenter) {
         // Define this Pattern's unique id.
         this._id = ItemPattern._id = (ItemPattern._id || 0) + 1;
-        item.remove();
-        if(item._class === 'Raster') {
-            this.item = item;
-            this.raster = item;
-        } else if (item) {
-            this.item = item.clone(false);
-            this.raster = this.item.rasterize(0,false);
-        } else {
-            this.raster = new Raster();
+        if (typeof(item.tagName)==='string') // item is canvas
+            this.item= item
+        else {
+            item.remove();
+            if (item._class === 'Raster') {
+                this.item = item;
+                this.raster = item;
+            } else if (item) {
+                this.item = item.clone(false);
+                this.raster = this.item.rasterize(0, false);
+            } else {
+                this.raster = new Raster();
+            }
         }
     },
 
