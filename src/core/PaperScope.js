@@ -106,6 +106,9 @@ var PaperScope = Base.extend(/** @lends PaperScope# */{
             if (agent.atom)
                 delete agent.chrome;
         }
+        if (!this.CanvasProvider) // sometime this is lost
+            this.CanvasProvider = CanvasProvider
+
     },
 
     /**
