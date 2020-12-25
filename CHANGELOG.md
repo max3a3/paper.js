@@ -1,6 +1,103 @@
 # Change Log
 
+## `0.12.11`
+
+### Fixed
+
+- Fix installation through Yarn (#1831).
+
+## `0.12.9`
+
+### Added
+
+- Export `CanvasProvider` to allow experimenting with
+  https://www.npmjs.com/package/canvaskit-wasm on Node.js
+
+### Fixed
+
+- Fix `Path.strokeBounds` that was incorrect for certain paths (#1824).
+- Fix Gulp 3 issues to be able to run Travis CI tests on Node.js 10, 12, 13 and
+  14.
+
+## `0.12.8`
+
+### Fixed
+
+- TypeScript: Fix returned instance type (#1796).
+- Fix `Path#strokeBounds` for open paths (#1817).
+- Fix animation progress handling in `Tween.update()`.
+- Fix setting `Item#scaling` to a new value after it was set to zero (#1816).
+- SVG Import: Fully support SVG strings with leading line-breaks (#1813).
+- Docs: Improve `Raster#initialize(object)` documentation (#1815, #1782).
+- Docs: Fix `Item#getItem(options)` documentation.
+
+## `0.12.7`
+
+### Fixed
+
+- PaperScript: Actually make `options.paperFeatures.moduleExports` work
+  independently from `options.paperFeatures.operatorOverloading`.
+
+## `0.12.6`
+
+### Added
+
+- PaperScript: Add option `options.paperFeatures.moduleExports` to control
+  module exports conversion.
+
+## `0.12.5`
+
+### Added
+
+- PaperScript: Add option `options.paperFeatures.operatorOverloading` to control
+  operator overloading.
+
+### Fixed
+
+- Fix `new Raster(HTMLCanvasElement)` constructor (#1745).
+- Handle `CurveLocation` on paths with only one segment.
+- Fix recently introduced error in `CompoundPath.compare()` (#1769).
+- Clamp opacity values to [0, 1] (#1814).
+- Support closed `Path` items with blend mode and no segments (#1763).
+- Fix error in `getCrossingSegments()` (#1773).
+- SVG Import: Support SVG strings with leading line-breaks (#1813).
+- Docs: Improve documentation for `Raster#drawImage(CanvasImageSource)` (#1784).
+
+### Changed
+
+- Use `'paper-'` prefix in generated view ids.
+
+## `0.12.4`
+
+### Added
+
+- Allow paper core import in TypeScript (#1713).
+- Boolean: Improve performance from `O(n^2)` to nearly `O(n)` by the use of the
+  sweep and prune algorithm (#1737).
+- Docs: Add support for nullable values.
+
+### Fixed
+
+- Fix `PathItem#getCrossing()` to not return overlaps (#1409).
+- Fix regression in `Curve.getIntersections()` (#1638).
+- Fix edge cases in `CurveLocation.isCrossing()` (#1419, #1263).
+- Fix `SymbolItem#hitTestAll()` to return only one match per symbol item
+  (#1680).
+- Fix handling of negative `Shape` sizes (#1733).
+- Fix parsing of RGB `Color` strings with percentages (#1736).
+- Fix `Shape` bounds when passing position in constructor (#1686).
+- Prevent nested group matrix from reset when transforming parent (#1711).
+- Boolean: Fix edge cases in overlap detection (#1262).
+- Boolean: Add check for paths with only one segment (#1351).
+- Boolean: Correctly handle open filled paths (#1647).
+- Boolean: Avoid winding number edge cases (#1619).
+- Docs: Fix some documentation return types (#1679).
+
 ## `0.12.3`
+
+### Added
+
+- Add documentation for `Item#internalBounds`.
 
 ### Fixed
 
@@ -8,11 +105,7 @@
 - SVG Export: Fix viewport size of exported `Symbol` (#1668).
 - Handle non-invertible matrices in `Item#contains()` (#1651).
 - Improve documentation for `Item#clipMask` (#1673).
-- Improve TypeScript definitions (#1659, #1663, #1664, #1667)
-
-### Added
-
-- Add documentation for `Item#internalBounds`.
+- Improve TypeScript definitions (#1659, #1663, #1664, #1667).
 
 ## `0.12.2`
 

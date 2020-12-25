@@ -2,8 +2,8 @@
  * Paper.js - The Swiss Army Knife of Vector Graphics Scripting.
  * http://paperjs.org/
  *
- * Copyright (c) 2011 - 2019, Juerg Lehni & Jonathan Puckey
- * http://scratchdisk.com/ & https://puckey.studio/
+ * Copyright (c) 2011 - 2020, Jürg Lehni & Jonathan Puckey
+ * http://juerglehni.com/ & https://puckey.studio/
  *
  * Distributed under the MIT license. See LICENSE file for details.
  *
@@ -98,15 +98,16 @@ var Path = PathItem.extend(/** @lends Path# */{
         // check its first entry for object as well.
         // But first see if segments are directly passed at all. If not, try
         // _set(arg).
-        var segments = Array.isArray(arg)
+        var args = arguments,
+            segments = Array.isArray(arg)
             ? typeof arg[0] === 'object'
                 ? arg
-                : arguments
+                : args
             // See if it behaves like a segment or a point, but filter out
             // rectangles, as accepted by some Path.Constructor constructors.
             : arg && (arg.size === undefined && (arg.x !== undefined
                     || arg.point !== undefined))
-                ? arguments
+                ? args
                 : null;
         // Always call setSegments() to initialize a few related variables.
         if (segments && segments.length > 0) {
@@ -548,11 +549,12 @@ var Path = PathItem.extend(/** @lends Path# */{
      * path.add(new Point(170, 75));
      */
     add: function(segment1 /*, segment2, ... */) {
-        return arguments.length > 1 && typeof segment1 !== 'number'
+        var args = arguments;
+        return args.length > 1 && typeof segment1 !== 'number'
             // addSegments
-            ? this._add(Segment.readList(arguments))
+            ? this._add(Segment.readList(args))
             // addSegment
-            : this._add([ Segment.read(arguments) ])[0];
+            : this._add([ Segment.read(args) ])[0];
     },
 
     /**
@@ -592,11 +594,12 @@ var Path = PathItem.extend(/** @lends Path# */{
      * myPath.segments[2].selected = true;
      */
     insert: function(index, segment1 /*, segment2, ... */) {
-        return arguments.length > 2 && typeof segment1 !== 'number'
+        var args = arguments;
+        return args.length > 2 && typeof segment1 !== 'number'
             // insertSegments
-            ? this._add(Segment.readList(arguments, 1), index)
+            ? this._add(Segment.readList(args, 1), index)
             // insertSegment
-            : this._add([ Segment.read(arguments, 1) ], index)[0];
+            : this._add([ Segment.read(args, 1) ], index)[0];
     },
 
     addSegment: function(/* segment */) {
@@ -970,7 +973,7 @@ var Path = PathItem.extend(/** @lends Path# */{
      * @param {Number|CurveLocation} location the offset or location on the
      *     path at which to divide the existing curve by inserting a new segment
      * @return {Segment} the newly inserted segment if the location is valid,
-     *     {code null} otherwise
+     *     `null` otherwise
      * @see Curve#divideAt(location)
      */
     divideAt: function(location) {
@@ -2334,9 +2337,8 @@ new function() { // Scope for drawing
                             length = flattener.length,
                             from = -style.getDashOffset(), to,
                             i = 0;
-                        from = from % length;
-                        // Step backwards in the dash sequence first until the
-                        // from parameter is below 0.
+                        // Step backwards in the dash sequence (dash -- no-dash)
+                        // first until the from parameter is below 0.
                         while (from > 0) {
                             from -= getOffset(i--) + getOffset(i--);
                         }
@@ -2401,9 +2403,10 @@ new function() { // PostScript-style drawing commands
         },
 
         cubicCurveTo: function(/* handle1, handle2, to */) {
-            var handle1 = Point.read(arguments),
-                handle2 = Point.read(arguments),
-                to = Point.read(arguments),
+            var args = arguments,
+                handle1 = Point.read(args),
+                handle2 = Point.read(args),
+                to = Point.read(args),
                 // First modify the current segment:
                 current = getCurrentSegment(this);
             // Convert to relative values:
@@ -2413,8 +2416,9 @@ new function() { // PostScript-style drawing commands
         },
 
         quadraticCurveTo: function(/* handle, to */) {
-            var handle = Point.read(arguments),
-                to = Point.read(arguments),
+            var args = arguments,
+                handle = Point.read(args),
+                to = Point.read(args),
                 current = getCurrentSegment(this)._point;
             // This is exact:
             // If we have the three quad points: A E D,
@@ -2429,9 +2433,10 @@ new function() { // PostScript-style drawing commands
         },
 
         curveTo: function(/* through, to, time */) {
-            var through = Point.read(arguments),
-                to = Point.read(arguments),
-                t = Base.pick(Base.read(arguments), 0.5),
+            var args = arguments,
+                through = Point.read(args),
+                to = Point.read(args),
+                t = Base.pick(Base.read(args), 0.5),
                 t1 = 1 - t,
                 current = getCurrentSegment(this)._point,
                 // handle = (through - (1 - t)^2 * current - t^2 * to) /
@@ -2447,15 +2452,16 @@ new function() { // PostScript-style drawing commands
         arcTo: function(/* to, clockwise | through, to
                 | to, radius, rotation, clockwise, large */) {
             // Get the start point:
-            var abs = Math.abs,
+            var args = arguments,
+                abs = Math.abs,
                 sqrt = Math.sqrt,
                 current = getCurrentSegment(this),
                 from = current._point,
-                to = Point.read(arguments),
+                to = Point.read(args),
                 through,
                 // Peek at next value to see if it's clockwise, with true as the
                 // default value.
-                peek = Base.peek(arguments),
+                peek = Base.peek(args),
                 clockwise = Base.pick(peek, true),
                 center, extent, vector, matrix;
             // We're handling three different approaches to drawing arcs in one
@@ -2465,15 +2471,15 @@ new function() { // PostScript-style drawing commands
                 var middle = from.add(to).divide(2),
                 through = middle.add(middle.subtract(from).rotate(
                         clockwise ? -90 : 90));
-            } else if (Base.remain(arguments) <= 2) {
+            } else if (Base.remain(args) <= 2) {
                 // #2: arcTo(through, to)
                 through = to;
-                to = Point.read(arguments);
+                to = Point.read(args);
             } else if (!from.equals(to)) {
                 // #3: arcTo(to, radius, rotation, clockwise, large)
                 // Draw arc in SVG style, but only if `from` and `to` are not
                 // equal (#1613).
-                var radius = Size.read(arguments),
+                var radius = Size.read(args),
                     isZero = Numerical.isZero;
                 // If rx = 0 or ry = 0 then this arc is treated as a
                 // straight line joining the endpoints.
@@ -2482,9 +2488,9 @@ new function() { // PostScript-style drawing commands
                     return this.lineTo(to);
                 // See for an explanation of the following calculations:
                 // https://www.w3.org/TR/SVG/implnote.html#ArcImplementationNotes
-                var rotation = Base.read(arguments),
-                    clockwise = !!Base.read(arguments),
-                    large = !!Base.read(arguments),
+                var rotation = Base.read(args),
+                    clockwise = !!Base.read(args),
+                    large = !!Base.read(args),
                     middle = from.add(to).divide(2),
                     pt = from.subtract(middle).rotate(-rotation),
                     x = pt.x,
@@ -2620,40 +2626,44 @@ new function() { // PostScript-style drawing commands
         },
 
         curveBy: function(/* through, to, parameter */) {
-            var through = Point.read(arguments),
-                to = Point.read(arguments),
-                parameter = Base.read(arguments),
+            var args = arguments,
+                through = Point.read(args),
+                to = Point.read(args),
+                parameter = Base.read(args),
                 current = getCurrentSegment(this)._point;
             this.curveTo(current.add(through), current.add(to), parameter);
         },
 
         cubicCurveBy: function(/* handle1, handle2, to */) {
-            var handle1 = Point.read(arguments),
-                handle2 = Point.read(arguments),
-                to = Point.read(arguments),
+            var args = arguments,
+                handle1 = Point.read(args),
+                handle2 = Point.read(args),
+                to = Point.read(args),
                 current = getCurrentSegment(this)._point;
             this.cubicCurveTo(current.add(handle1), current.add(handle2),
                     current.add(to));
         },
 
         quadraticCurveBy: function(/* handle, to */) {
-            var handle = Point.read(arguments),
-                to = Point.read(arguments),
+            var args = arguments,
+                handle = Point.read(args),
+                to = Point.read(args),
                 current = getCurrentSegment(this)._point;
             this.quadraticCurveTo(current.add(handle), current.add(to));
         },
 
         // TODO: Implement version for: (to, radius, rotation, clockwise, large)
         arcBy: function(/* to, clockwise | through, to */) {
-            var current = getCurrentSegment(this)._point,
-                point = current.add(Point.read(arguments)),
+            var args = arguments,
+                current = getCurrentSegment(this)._point,
+                point = current.add(Point.read(args)),
                 // Peek at next value to see if it's clockwise, with true as
                 // default value.
-                clockwise = Base.pick(Base.peek(arguments), true);
+                clockwise = Base.pick(Base.peek(args), true);
             if (typeof clockwise === 'boolean') {
                 this.arcTo(point, clockwise);
             } else {
-                this.arcTo(point, current.add(Point.read(arguments)));
+                this.arcTo(point, current.add(Point.read(args)));
             }
         },
 
@@ -2782,15 +2792,18 @@ statics: {
         }
 
         var length = segments.length - (closed ? 0 : 1);
-        for (var i = 1; i < length; i++)
-            addJoin(segments[i], join);
-        if (closed) {
-            // Go back to the beginning
-            addJoin(segments[0], join);
-        } else if (length > 0) {
-            // Handle caps on open paths
-            addCap(segments[0], cap);
-            addCap(segments[segments.length - 1], cap);
+        if (length > 0) {
+            for (var i = 1; i < length; i++) {
+                addJoin(segments[i], join);
+            }
+            if (closed) {
+                // Go back to the beginning
+                addJoin(segments[0], join);
+            } else {
+                // Handle caps on open paths
+                addCap(segments[0], cap);
+                addCap(segments[segments.length - 1], cap);
+            }
         }
         return bounds;
     },
@@ -2804,9 +2817,9 @@ statics: {
         if (!matrix)
             return [radius, radius];
         // If a matrix is provided, we need to rotate the stroke circle
-        // and calculate the bounding box of the resulting rotated elipse:
+        // and calculate the bounding box of the resulting rotated ellipse:
         // Get rotated hor and ver vectors, and determine rotation angle
-        // and elipse values from them:
+        // and ellipse values from them:
         var hor = new Point(radius, 0).transform(matrix),
             ver = new Point(0, radius).transform(matrix),
             phi = hor.getAngleInRadians(),
@@ -2815,7 +2828,7 @@ statics: {
         // Formula for rotated ellipses:
         // x = cx + a*cos(t)*cos(phi) - b*sin(t)*sin(phi)
         // y = cy + b*sin(t)*cos(phi) + a*cos(t)*sin(phi)
-        // Derivates (by Wolfram Alpha):
+        // Derivatives (by Wolfram Alpha):
         // derivative of x = cx + a*cos(t)*cos(phi) - b*sin(t)*sin(phi)
         // dx/dt = a sin(t) cos(phi) + b cos(t) sin(phi) = 0
         // derivative of y = cy + b*sin(t)*cos(phi) + a*cos(t)*sin(phi)
@@ -2832,7 +2845,7 @@ statics: {
             tan = Math.tan(phi),
             tx = Math.atan2(b * tan, a),
             ty = Math.atan2(b, tan * a);
-        // Due to symetry, we don't need to cycle through pi * n solutions:
+        // Due to symmetry, we don't need to cycle through pi * n solutions:
         return [Math.abs(a * Math.cos(tx) * cos + b * Math.sin(tx) * sin),
                 Math.abs(b * Math.sin(ty) * cos + a * Math.cos(ty) * sin)];
     },

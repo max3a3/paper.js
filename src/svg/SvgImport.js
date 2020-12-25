@@ -2,8 +2,8 @@
  * Paper.js - The Swiss Army Knife of Vector Graphics Scripting.
  * http://paperjs.org/
  *
- * Copyright (c) 2011 - 2019, Juerg Lehni & Jonathan Puckey
- * http://scratchdisk.com/ & https://puckey.studio/
+ * Copyright (c) 2011 - 2020, Jürg Lehni & Jonathan Puckey
+ * http://juerglehni.com/ & https://puckey.studio/
  *
  * Distributed under the MIT license. See LICENSE file for details.
  *
@@ -662,8 +662,12 @@ new function() {
 
         function onLoad(svg) {
             try {
-                var node = typeof svg === 'object' ? svg : new self.DOMParser()
-                        .parseFromString(svg, 'image/svg+xml');
+                var node = typeof svg === 'object'
+                    ? svg
+                    : new self.DOMParser().parseFromString(
+                        svg.trim(),
+                        'image/svg+xml'
+                    );
                 if (!node.nodeName) {
                     node = null;
                     throw new Error('Unsupported SVG source: ' + source);
@@ -693,8 +697,10 @@ new function() {
 
         // Have the group not pass on all transformations to its children,
         // as this is how SVG works too.
-        // See if it's a string but handle markup separately
-        if (typeof source === 'string' && !/^.*</.test(source)) {
+        // See if it's a string but handle markup separately, using `[\s\S]` to
+        // also match the first tag if it only starts on the second line in a
+        // multi-line string.
+        if (typeof source === 'string' && !/^[\s\S]*</.test(source)) {
             // First see if we're meant to import an element with the given
             // id.
             var node = document.getElementById(source);

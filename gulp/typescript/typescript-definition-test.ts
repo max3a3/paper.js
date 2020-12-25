@@ -378,8 +378,7 @@ item.clone({});
 item.copyContent(item);
 item.copyAttributes(item, true);
 item.rasterize();
-item.rasterize(0);
-item.rasterize(0, true);
+item.rasterize({});
 item.contains(point);
 item.isInside(rectangle);
 item.intersects(item);
@@ -683,6 +682,14 @@ path.getWeightedTangentAt(0);
 path.getWeightedNormalAt(0);
 path.getCurvatureAt(0);
 path.getOffsetsWithTangent(point);
+path = path.set(object);
+path = path.clone();
+path = path.addTo(group);
+path = path.copyTo(group);
+path = path.on('', callback);
+path = path.on({});
+path = path.off('', callback);
+path = path.off({});
 
 
 //

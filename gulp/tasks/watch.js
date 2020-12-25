@@ -2,8 +2,8 @@
  * Paper.js - The Swiss Army Knife of Vector Graphics Scripting.
  * http://paperjs.org/
  *
- * Copyright (c) 2011 - 2019, Juerg Lehni & Jonathan Puckey
- * http://scratchdisk.com/ & https://puckey.studio/
+ * Copyright (c) 2011 - 2020, Jürg Lehni & Jonathan Puckey
+ * http://juerglehni.com/ & https://puckey.studio/
  *
  * Distributed under the MIT license. See LICENSE file for details.
  *
@@ -12,14 +12,15 @@
 
 var gulp = require('gulp'),
     path = require('path'),
-    gutil = require('gulp-util');
+    log = require('fancy-log'),
+    colors = require('ansi-colors');
 
 gulp.task('watch', function () {
     gulp.watch('src/**/*.js', ['jshint'])
         .on('change', function(event) {
-            gutil.log(
-                gutil.colors.green('File ' + event.type + ': ') +
-                gutil.colors.magenta(path.basename(event.path))
+            log(
+                colors.green('File ' + event.type + ': ') +
+                colors.magenta(path.basename(event.path))
             );
         });
 });

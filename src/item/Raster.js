@@ -2,8 +2,8 @@
  * Paper.js - The Swiss Army Knife of Vector Graphics Scripting.
  * http://paperjs.org/
  *
- * Copyright (c) 2011 - 2019, Juerg Lehni & Jonathan Puckey
- * http://scratchdisk.com/ & https://puckey.studio/
+ * Copyright (c) 2011 - 2020, Jürg Lehni & Jonathan Puckey
+ * http://juerglehni.com/ & https://puckey.studio/
  *
  * Distributed under the MIT license. See LICENSE file for details.
  *
@@ -18,7 +18,6 @@
  * @extends Item
  */
 var Raster = Item.extend(/** @lends Raster# */{
-}, /** @lends Raster# */{
     _class: 'Raster',
     _applyMatrix: false,
     _canApplyMatrix: false,
@@ -31,7 +30,7 @@ var Raster = Item.extend(/** @lends Raster# */{
     },
     // Prioritize `crossOrigin` over `source`:
     _prioritize: ['crossOrigin'],
-    _smoothing: true,
+    _smoothing: 'low',
     // Enforce creation of beans, as bean getters have hidden parameters.
     // See  #getContext(_change) below.
     beans: true,
@@ -72,15 +71,6 @@ var Raster = Item.extend(/** @lends Raster# */{
      *
      * // Create the raster:
      * var raster = new Raster(imageElement);
-     *
-     * @example {@paperscript height=300}
-     * var raster = new Raster({
-     *     source: 'http://assets.paperjs.org/images/marilyn.jpg',
-     *     position: view.center
-     * });
-     *
-     * raster.scale(0.5);
-     * raster.rotate(10);
      */
     /**
      * Creates a new empty raster of the given size, and places it in the
@@ -107,6 +97,23 @@ var Raster = Item.extend(/** @lends Raster# */{
      *     }
      * }
      */
+    /**
+     * Creates a new raster from an object description, and places it in the
+     * active layer.
+     *
+     * @name Raster#initialize
+     * @param {Object} object an object containing properties to be set on the
+     *     raster
+     *
+     * @example {@paperscript height=300}
+     * var raster = new Raster({
+     *     source: 'http://assets.paperjs.org/images/marilyn.jpg',
+     *     position: view.center
+     * });
+     *
+     * raster.scale(0.5);
+     * raster.rotate(10);
+     */
     initialize: function Raster(source, position) {
         // Support three forms of item initialization:
         // - One object literal describing all the different properties.
@@ -114,7 +121,7 @@ var Raster = Item.extend(/** @lends Raster# */{
         // - A size (Size) describing the canvas that will be  created and an
         //   optional position (Point).
         // If _initialize can set properties through object literal, we're done.
-        // Otherwise we need to check the type of object:       var image,
+        // Otherwise we need to check the type of object:
         if (!this._initialize(source,
                 position !== undefined && Point.read(arguments))) {
             var image,
@@ -125,7 +132,7 @@ var Raster = Item.extend(/** @lends Raster# */{
                         ? source
                         : null;
             if (object && object !== Item.NO_INSERT) {
-                if (object.getContent || object.naturalHeight != null) {
+                if (object.getContext || object.naturalHeight != null) {
                     image = object;
                 } else if (object) {
                     // See if the arguments describe the raster size:
@@ -180,19 +187,20 @@ var Raster = Item.extend(/** @lends Raster# */{
                 this, 'setSize');
     },
 
-    setSize: function(/* size */) {
+    setSize: function(_size, _clear) {
         var size = Size.read(arguments);
         if (!size.equals(this._size)) { // NOTE: this._size could be null
             if (size.width > 0 && size.height > 0) {
                 // Get reference to image before changing canvas.
-                var element = this.getElement();
+                var element = !_clear && this.getElement();
                 // NOTE: Setting canvas internally sets _size.
                 // NOTE: No need to release canvas because #_setImage() does so.
                 this._setImage(CanvasProvider.getCanvas(size));
-                // Draw element back onto new canvas.
-                if (element)
+                if (element) {
+                    // Draw element back onto the new, resized canvas.
                     this.getContext(true).drawImage(element, 0, 0,
                             size.width, size.height);
+                }
             } else {
                 // 0-width / height dimensions do not require the creation of
                 // an internal canvas. Just reflect the size for now.
@@ -200,6 +208,9 @@ var Raster = Item.extend(/** @lends Raster# */{
                     CanvasProvider.release(this._canvas);
                 this._size = size.clone();
             }
+        } else if (_clear) {
+            // We can reuse the canvas, but need to clear it.
+            this.clear();
         }
     },
 
@@ -472,17 +483,27 @@ var Raster = Item.extend(/** @lends Raster# */{
     },
 
     /**
-     * Specifies if the raster should be smoothed when scaled up or if the
-     * pixels should be scaled up by repeating the nearest neighboring pixels.
+     * Determines if the raster is drawn with pixel smoothing when scaled up or
+     * down, and if so, at which quality its pixels are to be smoothed. The
+     * settings of this property control both the `imageSmoothingEnabled` and
+     * `imageSmoothingQuality` properties of the `CanvasRenderingContext2D`
+     * interface.
+     *
+     * By default, smoothing is enabled at `'low'` quality. It can be set to of
+     * `'off'` to scale the raster's pixels by repeating the nearest neighboring
+     * pixels, or to `'low'`, `'medium'` or `'high'` to control the various
+     * degrees of available image smoothing quality.
+     *
+     * For backward compatibility, it can can also be set to `false` (= `'off'`)
+     * or `true` (= `'low'`).
      *
      * @bean
-     * @type Boolean
-     * @default true
+     * @type String
+     * @default 'low'
+     * @values 'low', 'medium', 'high', 'off'
      *
-     * @example {@paperscript}
-     * var raster = new Raster({
-     *     source: 'http://assets.paperjs.org/images/marilyn.jpg',
-     *     smoothing: false
+     * @example {@paperscript} var raster = new Raster({source:
+     * 'http://assets.paperjs.org/images/marilyn.jpg', smoothing: 'off'
      * });
      * raster.scale(5);
      */
@@ -491,7 +512,9 @@ var Raster = Item.extend(/** @lends Raster# */{
     },
 
     setSmoothing: function(smoothing) {
-        this._smoothing = smoothing;
+        this._smoothing = typeof smoothing === 'string'
+            ? smoothing
+            : smoothing ? 'low' : 'off';
         this._changed(/*#=*/Change.ATTRIBUTE);
     },
 
@@ -562,7 +585,7 @@ var Raster = Item.extend(/** @lends Raster# */{
     /**
      * Draws an image on the raster.
      *
-     * @param {HTMLImageElement|HTMLCanvasElement} image
+     * @param {CanvasImageSource} image
      * @param {Point} point the offset of the image as a point in pixel
      * coordinates
      */
@@ -697,8 +720,9 @@ var Raster = Item.extend(/** @lends Raster# */{
      * @param {Color} color the color that the pixel will be set to
      */
     setPixel: function(/* point, color */) {
-        var point = Point.read(arguments),
-            color = Color.read(arguments),
+        var args = arguments,
+            point = Point.read(args),
+            color = Color.read(args),
             components = color._convert('rgb'),
             alpha = color._alpha,
             ctx = this.getContext(true),
@@ -818,16 +842,19 @@ var Raster = Item.extend(/** @lends Raster# */{
         if (element && element.width > 0 && element.height > 0) {
             // Handle opacity for Rasters separately from the rest, since
             // Rasters never draw a stroke. See Item#draw().
-            ctx.globalAlpha = this._opacity;
+            ctx.globalAlpha = Numerical.clamp(this._opacity, 0, 1);
 
             // Call _setStyles() to make sure shadow is drawn (#1437).
             this._setStyles(ctx, param, viewMatrix);
 
-            // Set context smoothing value according to raster property.
-            // There's no need to restore original value after drawing due to
-            // the call to ctx.restore() in Item#draw() after this method call.
+            // `Raster#smoothing` controlls both the `imageSmoothingQuality`
+            // and `imageSmoothingEnabled` canvas context properties:
+            var smoothing = this._smoothing,
+                disabled = smoothing === 'off';
             DomElement.setPrefixed(
-                ctx, 'imageSmoothingEnabled', this._smoothing
+                ctx,
+                disabled ? 'imageSmoothingEnabled' : 'imageSmoothingQuality',
+                disabled ? false : smoothing
             );
 
             ctx.drawImage(element,

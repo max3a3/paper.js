@@ -2,8 +2,8 @@
  * Paper.js - The Swiss Army Knife of Vector Graphics Scripting.
  * http://paperjs.org/
  *
- * Copyright (c) 2011 - 2019, Juerg Lehni & Jonathan Puckey
- * http://scratchdisk.com/ & https://puckey.studio/
+ * Copyright (c) 2011 - 2020, Jürg Lehni & Jonathan Puckey
+ * http://juerglehni.com/ & https://puckey.studio/
  *
  * Distributed under the MIT license. See LICENSE file for details.
  *
@@ -29,6 +29,7 @@ var packages = ['paper-jsdom', 'paper-jsdom-canvas'],
     assetPath = sitePath + '/assets/js',
     releaseMessage = null,
     jsonOptions = {
+        preserve_newlines: true,
         end_with_newline: true
     };
 
@@ -62,7 +63,8 @@ gulp.task('publish:json', ['publish:version'], function() {
         .pipe(jsonEditor({
             version: options.version
         }, jsonOptions))
-        .pipe(gulp.dest('.'));
+        .pipe(gulp.dest('.'))
+        .pipe(shell('npm install')); // Update package-lock.json
 });
 
 gulp.task('publish:dist', ['zip']);
