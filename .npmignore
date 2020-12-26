@@ -1,0 +1,7 @@
+examples/
+hack/
+src/
+test/
+travis/
+gulp/
+packages/
