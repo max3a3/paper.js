@@ -52,18 +52,22 @@ function testSymbol(type) {
 
     }
 }
-
-function loadImage(url) {
+let rasterDict  = {}
+let imageDict = {}
+function loadImage(url,entry) {
 
     let img = new Image();
     img.crossOrigin = "anonymous";
     img.src = url;
-
+    img.onload=ev=>{
+        rasterDict[entry]=new paper.Raster(img)
+    }
+    imageDict[entry] = img
     return img
 }
 
 // run http-server --cors
-var gImage1 = loadImage('http://localhost:8080/zigzag.png')
+var gImage1
 function testRasterSymbol() {
 
     var raster = new paper.Raster(gImage1);
@@ -120,19 +124,36 @@ function testStarSymbol() {
 }
 
 let offsetX = 5
+let gContext
 
 function app_init(paper) {
     var canvas = document.getElementById('canvas');
     var ctx = canvas.getContext('2d');
+    gContext = ctx
     $("#move").click(() => {
         move(testObj)
     })
     $("#testSymbol2").click(() => {
         testSymbol(2)
     })
-
+    $("#blur1").click(()=>{
+        testBlur(1)
+    })
 }
 
+function testBlur(style) {
+    switch(style) {
+        case 1:
+        {
+            const imgNone = new Image();
+            gContext.filter = 'none';
+            gContext.drawImage(imageDict['zigzag'],60, 50)
+            gContext.filter = 'blur(2px)';
+            gContext.drawImage(imageDict['zigzag'],90, 50)
+        }
+        break
+    }
+}
 var testObj
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -141,11 +162,16 @@ document.addEventListener('DOMContentLoaded', () => {
     paper.setup(canvas);
 
     app_init(paper)
+    // rasterDict['zigzag'] has the Raster
+    // imageDict['zigzag'] has the IMage
+    gImage1 = loadImage('http://localhost:8080/zigzag.png','zigzag')
 
     testObj = init_drawing(paper)
 
-    createPathTool(paper)
+    // createPathTool(paper)
+    createStampTool(paper,rasterDict)
     // testSymbol(1)
     // testObj = fillPaper(1)
 // testObj=    itemfill(1)
 })
+// need to run http-server --cors in D:\HaxeToolkit\projects\test_haxe\Assets\brushsettings
