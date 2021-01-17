@@ -139,6 +139,10 @@ function app_init(paper) {
     $("#blur1").click(()=>{
         testBlur(1)
     })
+    $("#blur2").click(()=>{
+        testBlur(2)
+    })
+
 }
 
 function testBlur(style) {
@@ -151,7 +155,25 @@ function testBlur(style) {
             gContext.filter = 'blur(2px)';
             gContext.drawImage(imageDict['zigzag'],90, 50)
         }
-        break
+            break
+        case 2:
+        {
+
+
+            let ctx = gContext
+            gContext.filter = 'blur(2px)';   // set before operation
+            ctx.lineWidth = 3;
+
+            ctx.beginPath();
+            ctx.moveTo(20, 20);
+            ctx.lineTo(130, 130);
+            ctx.rect(40, 40, 70, 70);
+            ctx.stroke();  // operation
+
+            gContext.filter = 'none'; // clear it
+
+        }
+            break
     }
 }
 var testObj
@@ -164,7 +186,10 @@ document.addEventListener('DOMContentLoaded', () => {
     app_init(paper)
     // rasterDict['zigzag'] has the Raster
     // imageDict['zigzag'] has the IMage
-    gImage1 = loadImage('http://localhost:8080/zigzag.png','zigzag')
+
+    let image = 'zigzag.png'//'dogpaw.png'
+    let server = 'http://filefxstatic.imagefx.art/brushtip/'
+    gImage1 = loadImage(`${server}${image}`,'zigzag')
 
     testObj = init_drawing(paper)
 
